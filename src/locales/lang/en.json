@@ -1,0 +1,19 @@
+{
+    "nav": {
+        "homePage": "Home Page",
+        "menu": "Menu",
+        "header": "Header",
+        "footer": "Footer",
+        "aboutUs": "About Us",
+        "aboutUsPage": "About Group",
+        "ourSpecialties": "Our Specialties",
+        "internationalPatient": "International Patient",
+        "internationalPatientPage": "International Patient",
+        "careers": "Careers",
+        "careersPage": "Careers",
+        "whatsNew": "What's New",
+        "whatsNewPage": "What's New",
+        "contactUs": "Contact Us",
+        "contactUsPage": "Contact Us"
+    }
+}

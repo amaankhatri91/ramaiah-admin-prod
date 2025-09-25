@@ -1,0 +1,25 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap");
+@import "./components/index.css";
+@import "./template/index.css";
+@import "./vendors/index.css";
+@import "./tailwind/index.css";
+
+/* Hide number input spinners for Chrome, Safari, Edge, Opera */
+.no-spinner::-webkit-outer-spin-button,
+.no-spinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+/* Hide number input spinners for Firefox */
+.no-spinner[type='number'] {
+  -moz-appearance: textfield;
+}
+
+/* Dropdown indicator rotation animation */
+.select-dropdown-indicator {
+  transition: transform 0.5s;
+}
+.select-dropdown-indicator.rotate-360 {
+  transform: rotate(180deg);
+}

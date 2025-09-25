@@ -1,0 +1,13 @@
+const EditPencilSvg = () => {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 17 17" fill="none">
+        <g opacity="0.6">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M9.19671 9.92468L6.72205 10.2787L7.07538 7.80334L13.4394 1.43934C14.0252 0.853552 14.9749 0.853552 15.5607 1.43934C16.1465 2.02513 16.1465 2.97489 15.5607 3.56068L9.19671 9.92468Z" stroke="black" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M12.7321 2.14673L14.8534 4.26806" stroke="black" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M13 10.0007V15.0007C13 15.553 12.5523 16.0007 12 16.0007H2C1.44772 16.0007 1 15.553 1 15.0007V5.00073C1 4.44845 1.44772 4.00073 2 4.00073H7" stroke="black" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+      </svg>
+    )
+}
+
+export default EditPencilSvg 

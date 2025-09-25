@@ -1,0 +1,44 @@
+/* Testimonial Slider Styles */
+.testimonial-swiper {
+    width: 100%;
+    height: 100%;
+}
+
+.testimonial-swiper .swiper-slide {
+    text-align: left;
+}
+
+/* Custom pagination dots */
+.testimonial-swiper .swiper-pagination {
+    position: static !important;
+    display: flex;
+    justify-content: flex-start;
+    gap: 8px;
+    margin-top: 25px;
+ 
+}
+.testislide .swiper-pagination{
+    text-align: justify !important;
+
+}
+.testislide .swiper-pagination-clickable .swiper-pagination-bullet{
+    background-color: #000000 !important;
+}
+.testimonial-swiper .swiper-pagination-bullet {
+    width: 8px;
+    height: 8px;
+    background-color: #D1D5DB;
+    border-radius: 50%;
+    opacity: 1;
+    transition: all 0.3s ease;
+}
+
+.testimonial-swiper .swiper-pagination-bullet-active {
+    background-color: #4880FF;
+    transform: scale(1.2);
+}
+
+/* Override Swiper default styles */
+.testimonial-swiper .swiper-pagination-bullet {
+    margin: 0 !important;
+} 

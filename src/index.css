@@ -1,0 +1,58 @@
+@import "./assets/styles/app.css";
+
+/* .propertyslect .select__control.css-15bhs5i-control{
+    border-radius: 19px !important;
+}
+.propertyslect .css-1ey9rhy-control:hover{
+    box-shadow: none !important;
+    outline: none !important;
+    border-radius: 19px !important;
+}
+.propertyslect .css-15bhs5i-control:hover {
+    box-shadow: none !important;
+    border-radius: 19px !important;
+    outline: none !important;
+}
+.propertyslect .css-15bhs5i-control {
+    box-shadow: none !important;
+    border-radius: 19px !important;
+    outline: none !important;
+}
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+} */
+
+/* Firefox */
+/* input[type=number] {
+  -moz-appearance: textfield;
+}
+
+.user-metrics-card .card-body{
+  padding: 20px 16px !important;
+}
+.property-card .card-body{
+  padding: 20px 16px !important;
+}
+.revenue-card .card-body{
+  padding: 20px 16px !important;
+} */
+
+/* Fix card layout between 1280px and 1376px so titles & content don't cramp */
+/* @media (min-width: 1280px) and (max-width: 1376px) {
+  
+  .user-metrics-card h3,
+  .property-card h3,
+  .revenue-card h3 {
+    font-size: 15px !important;
+    line-height: 1.25 !important;
+    margin-bottom: 12px !important;
+  }
+
+  .user-metrics-card img,
+  .property-card img {
+    max-width: 56px;
+    height: auto;
+  }
+} */

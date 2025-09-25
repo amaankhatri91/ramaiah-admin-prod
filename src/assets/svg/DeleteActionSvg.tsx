@@ -1,0 +1,13 @@
+const DeleteActionSvg = () => {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 17 17" fill="none">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M12.5385 16H4.46159C3.82433 16 3.30774 15.4403 3.30774 14.75V3.49988H13.6924V14.75C13.6924 15.4403 13.1758 16 12.5385 16Z" stroke="#EF3826" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M6.76938 12.25V7.25" stroke="#EF3826" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M10.2308 12.25V7.25" stroke="#EF3826" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M1 3.50004H16" stroke="#EF3826" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M10.2309 1H6.76932C6.13207 1 5.61548 1.55965 5.61548 2.25001V3.50002H11.3847V2.25001C11.3847 1.55965 10.8681 1 10.2309 1Z" stroke="#EF3826" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    )
+}
+
+export default DeleteActionSvg 
