@@ -10,7 +10,7 @@ import { Field, Form, Formik } from 'formik'
 import * as Yup from 'yup'
 import { useUploadFileMutation } from '@/store/slices/fileUpload/fileUploadApiSlice'
 import toast from '@/components/ui/toast'
-import Notification from '@/components/ui/notification'
+import Notification from '@/components/ui/Notification'
 
 const GrandchildMenuDisplay = () => {
     const { menuId } = useParams<{ menuId: string }>()
