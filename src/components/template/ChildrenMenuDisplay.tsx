@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import NavigationService from '@/services/NavigationService'
 import { setActiveSpeciality, removeFromMenuPathItems } from '@/store/slices/base/commonSlice'
 import SpecialityContentSections from './SpecialityContentSections'
+import { apiGetPageSections, PageSectionsResponse, PageSectionsData } from '@/services/HomeService'
 
 const ChildrenMenuDisplay = () => {
     const childrenMenuData = useAppSelector((state) => state.base.common.childrenMenuData)
@@ -19,6 +20,10 @@ const ChildrenMenuDisplay = () => {
     const [availableTabs, setAvailableTabs] = useState<Array<{id: number, title: string}>>([])
     const [tabChildrenData, setTabChildrenData] = useState<{[key: number]: any}>({})
     const [loadingTab, setLoadingTab] = useState<number | null>(null)
+    
+    // State for page data and loading
+    const [pageData, setPageData] = useState<{[key: string]: PageSectionsData}>({})
+    const [loadingPageData, setLoadingPageData] = useState<number | null>(null)
 
     // Function to load tab data
     const loadTabData = useCallback(async (tabId: number) => {
@@ -43,6 +48,66 @@ const ChildrenMenuDisplay = () => {
         }
     }, [tabChildrenData])
 
+    // Function to load page data for a specific tab
+    const loadPageData = useCallback(async (tabId: number, tabTitle: string) => {
+        // First, get the navigation data to extract page_id
+        let pageId: string | null = null
+        
+        try {
+            const navigationResponse = await NavigationService.getChildrenMenu(tabId)
+            if (navigationResponse.data && navigationResponse.data.page_id) {
+                pageId = navigationResponse.data.page_id.toString()
+                console.log(`Extracted page_id ${pageId} from navigation API for tab: ${tabTitle} (ID: ${tabId})`)
+            } else {
+                console.log(`No page_id found in navigation response for tab: ${tabTitle} (ID: ${tabId})`)
+                return
+            }
+        } catch (error) {
+            console.error('Error fetching navigation data for page_id:', error)
+            return
+        }
+        
+        // Ensure pageId is not null before proceeding
+        if (!pageId) {
+            console.log(`Page ID is null for tab: ${tabTitle} (ID: ${tabId})`)
+            return
+        }
+        
+        // If we already have data for this page, don't fetch again
+        if (pageData[pageId]) {
+            console.log('Page data already exists for:', pageId, pageData[pageId])
+            return
+        }
+        
+        setLoadingPageData(tabId)
+        try {
+            console.log(`Fetching page data for tab: ${tabTitle} (ID: ${tabId}) with page_id: ${pageId}`)
+            const response = await apiGetPageSections(pageId)
+            
+            if (response.data) {
+                const pageData = response.data as PageSectionsData
+                setPageData(prev => ({
+                    ...prev,
+                    [pageId]: pageData
+                }))
+                
+                // Log the fetched data as requested
+                console.log('=== PAGE DATA FETCHED ===')
+                console.log('Tab Title:', tabTitle)
+                console.log('Tab ID:', tabId)
+                console.log('Page ID used:', pageId)
+                console.log('Hero Section:', pageData.heroSection)
+                console.log('All Sections:', pageData.sections)
+                console.log('Full Response Data:', pageData)
+                console.log('========================')
+            }
+        } catch (error) {
+            console.error('Error fetching page data:', error)
+        } finally {
+            setLoadingPageData(null)
+        }
+    }, [pageData])
+
     // Update tabs when children menu data changes
     useEffect(() => {
         if (childrenMenuData && childrenMenuData.children) {
@@ -58,9 +123,11 @@ const ChildrenMenuDisplay = () => {
                 dispatch(setActiveSpeciality(tabs[0].title))
                 // Automatically load the first tab's data
                 loadTabData(tabs[0].id)
+                // Also load page data for the first tab
+                loadPageData(tabs[0].id, tabs[0].title)
             }
         }
-    }, [childrenMenuData, activeTab, dispatch, loadTabData])
+    }, [childrenMenuData, activeTab, dispatch, loadTabData, loadPageData])
 
     const handleMenuItemClick = (menuId: number) => {
         navigate(`/menu/${menuId}`)
@@ -97,7 +164,11 @@ const ChildrenMenuDisplay = () => {
     const handleTabClick = async (tabName: string, tabId: number) => {
         setActiveTab(tabName)
         dispatch(setActiveSpeciality(tabName))
-        await loadTabData(tabId)
+        // Load both tab children data and page data
+        await Promise.all([
+            loadTabData(tabId),
+            loadPageData(tabId, tabName)
+        ])
     }
 
     // const handleCloseTab = (tabName: string) => {
@@ -195,7 +266,7 @@ const ChildrenMenuDisplay = () => {
                             <span className={`font-inter text-[16px] font-semibold leading-normal ${
                                 activeTab === tab.title ? 'text-white' : 'text-[#495057]'
                             }`}>{tab.title}</span>
-                            {loadingTab === tab.id && (
+                            {(loadingTab === tab.id || loadingPageData === tab.id) && (
                                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                             )}
                             <button
@@ -226,6 +297,7 @@ const ChildrenMenuDisplay = () => {
                     childrenMenuData={childrenMenuData}
                     availableTabs={availableTabs}
                     tabChildrenData={tabChildrenData}
+                    pageData={pageData}
                     onNavigateToChildren={handleNavigateToChildren}
                     onNavigateToGrandchild={handleNavigateToGrandchild}
                 />

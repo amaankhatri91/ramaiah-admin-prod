@@ -234,3 +234,37 @@ export async function apiUpdateHomeData(data: UpdateHomeRequest) {
         throw error
     }
 }
+
+// Interface for page sections API response
+export interface PageSectionsResponse {
+    status: number
+    message: string
+    data: {
+        heroSection?: any
+        sections?: any[]
+        [key: string]: any
+    }
+}
+
+// Interface for the data part of the response
+export interface PageSectionsData {
+    heroSection?: any
+    sections?: any[]
+    [key: string]: any
+}
+
+// API function to get page sections data
+export async function apiGetPageSections(pageId: string) {
+    console.log(`Making API call to /home/sections/${pageId}`)
+    try {
+        const response = await ApiService.fetchData<PageSectionsResponse>({
+            url: `/home/sections/${pageId}`,
+            method: 'get',
+        })
+        console.log('Page Sections API Response received:', response)
+        return response
+    } catch (error) {
+        console.error('Page Sections API Error:', error)
+        throw error
+    }
+}

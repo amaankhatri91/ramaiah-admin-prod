@@ -9,12 +9,14 @@ import { ChildrenMenuItem, ChildrenMenuData } from '@/store/slices/base/commonSl
 import { useUploadFileMutation } from '@/store/slices/fileUpload/fileUploadApiSlice'
 import toast from '@/components/ui/toast'
 import Notification from '@/components/ui/notification'
+import { PageSectionsData } from '@/services/HomeService'
 
 interface SpecialityContentSectionsProps {
     activeTab: string
     childrenMenuData?: ChildrenMenuData | null
     availableTabs?: Array<{ id: number, title: string }>
     tabChildrenData?: { [key: number]: any }
+    pageData?: { [key: string]: PageSectionsData }
     onNavigateToChildren?: (menuId: number) => void
     onNavigateToGrandchild?: (menuId: number) => void
 }
@@ -24,6 +26,7 @@ const SpecialityContentSections: React.FC<SpecialityContentSectionsProps> = ({
     childrenMenuData,
     availableTabs,
     tabChildrenData,
+    pageData,
     onNavigateToChildren,
     onNavigateToGrandchild
 }) => {
@@ -44,8 +47,15 @@ const SpecialityContentSections: React.FC<SpecialityContentSectionsProps> = ({
         return tabChildrenData[currentTab.id]
     }
 
+    // Get the current page data from API response
+    const getCurrentPageData = () => {
+        if (!pageData || !activeTab) return null
+        return pageData[activeTab]
+    }
+
     const currentTabData = getCurrentTabData()
     const currentTabChildrenData = getCurrentTabChildrenData()
+    const currentPageData = getCurrentPageData()
 
     // Use only dynamic pages from API with IDs for drag and drop
     const [pages, setPages] = useState<Array<{ id: number, title: string }>>([])
@@ -72,9 +82,70 @@ const SpecialityContentSections: React.FC<SpecialityContentSectionsProps> = ({
         }
     }, [activeTab, currentTabChildrenData])
 
-    // Form states for different sections
+    // Log page data when it changes
+    useEffect(() => {
+        if (currentPageData && activeTab) {
+            console.log('=== CURRENT PAGE DATA IN SPECIALITY CONTENT ===')
+            console.log('Active Tab:', activeTab)
+            console.log('Page Data:', currentPageData)
+            console.log('Hero Section:', currentPageData.heroSection)
+            console.log('Sections:', currentPageData.sections)
+            console.log('===============================================')
+        }
+    }, [currentPageData, activeTab])
+
+    // Update Hero Section content when active tab changes
+    useEffect(() => {
+        if (currentTabData && activeTab) {
+            // Update hero section with tab-specific content
+            setHeroSection(prev => ({
+                ...prev,
+                headerText: currentTabData.title || `Revolutionizing Healthcare with Advanced ${activeTab}`,
+                descriptionText: `Comprehensive healthcare services for ${activeTab}`,
+                buttonText: 'Book Appointment',
+                buttonLink: `https://www.ramaiah.com/${currentTabData.url || 'appointment'}`,
+            }))
+
+            // Update overview section with tab-specific content
+            setOverviewSection(prev => ({
+                ...prev,
+                headerText: 'Overview',
+                overview: `We are always indebted to Our Founder DR. M S Ramaiah, a visionary who built Institutions that redefined learning. The ${activeTab} represents our commitment to excellence in healthcare delivery.\n\nOur ${activeTab} combines cutting-edge technology with compassionate care, ensuring that every patient receives the highest quality treatment. We believe that investment in specialized healthcare services is the way forward for the development & progress of the nation.`,
+            }))
+
+            // Update courses section with tab-specific content
+            setCoursesSection(prev => ({
+                ...prev,
+                headerText: 'Our Specialities',
+                courses: [
+                    { id: 1, text: `${activeTab} - Advanced Treatment`, link: '' },
+                    { id: 2, text: `${activeTab} - Diagnostic Services`, link: '' },
+                    { id: 3, text: `${activeTab} - Surgical Procedures`, link: '' },
+                    { id: 4, text: `${activeTab} - Rehabilitation`, link: '' },
+                    { id: 5, text: `${activeTab} - Follow-up Care`, link: '' }
+                ]
+            }))
+
+            // Update services section with tab-specific content
+            setServicesFacilitiesSection(prev => ({
+                ...prev,
+                headerText: 'Services & Facilities',
+                services: [
+                    { id: 1, text: `${activeTab} - Outpatient Services` },
+                    { id: 2, text: `${activeTab} - Inpatient Wards` },
+                    { id: 3, text: `${activeTab} - Daycare Units` },
+                    { id: 4, text: `${activeTab} - Advanced Diagnostics` },
+                    { id: 5, text: `${activeTab} - Surgical Facilities` },
+                    { id: 6, text: `${activeTab} - Consultation Services` },
+                    { id: 7, text: `${activeTab} - Emergency Care` }
+                ]
+            }))
+        }
+    }, [activeTab, currentTabData])
+
+    // Form states for different sections - now dynamic based on active tab
     const [heroSection, setHeroSection] = useState({
-        headerText: 'Revolutionizing Healthcare with Advanced Oncosciences',
+        headerText: '',
         descriptionText: '',
         buttonText: 'Book Appointment',
         buttonLink: 'https://www.somepagelink.com',
@@ -90,20 +161,14 @@ const SpecialityContentSections: React.FC<SpecialityContentSectionsProps> = ({
 
     const [overviewSection, setOverviewSection] = useState({
         headerText: 'Overview',
-        overview: 'We are always indebted to Our Founder DR. M S Ramaiah, a visionary who built Institutions that redefined learning. It was his dream to impart Technical and Medical education to all, that made him establish two prestigious institutions, M S Ramaiah Institute of Technology (1962) and Ramaiah Medical College (1979). These are presently considered major hubs for education in the country.\n\nHe believed that investment in education was the way forward for the development & progress of the nation. His thoughts & spirit have been the driving force for the Ramaiah Group of Institutions to uphold his values and spiritual thoughts for the future.',
+        overview: '',
         image: null as File | null,
         imageFileName: 'In affiliation.jpeg'
     })
 
     const [coursesSection, setCoursesSection] = useState({
         headerText: 'Our Specialities',
-        courses: [
-            { id: 1, text: 'Medical Oncology', link: '' },
-            { id: 2, text: 'Surgical Oncology', link: '' },
-            { id: 3, text: 'Radiation Oncology', link: '' },
-            { id: 4, text: 'Hemato-oncology & BMT', link: '' },
-            { id: 5, text: 'Nuclear Medicine', link: '' }
-        ]
+        courses: [] as Array<{ id: number, text: string, link: string }>
     })
 
     const [expertsSection, setExpertsSection] = useState({
@@ -113,15 +178,7 @@ const SpecialityContentSections: React.FC<SpecialityContentSectionsProps> = ({
 
     const [servicesFacilitiesSection, setServicesFacilitiesSection] = useState({
         headerText: 'Services & Facilities',
-        services: [
-            { id: 1, text: 'Outpatient Services' },
-            { id: 2, text: 'Inpatient Wards' },
-            { id: 3, text: 'Daycare Chemotherapy Units' },
-            { id: 4, text: 'Radiation Therapy' },
-            { id: 5, text: 'Robotic & Laparoscopic Oncosurgery' },
-            { id: 6, text: 'Genetic Counselling' },
-            { id: 7, text: 'PET-CT' }
-        ]
+        services: [] as Array<{ id: number, text: string }>
     })
 
     const [enquiryFormSection, setEnquiryFormSection] = useState({

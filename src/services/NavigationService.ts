@@ -8,6 +8,18 @@ export interface MenuItem {
   page: any
   specialty: any
   children: MenuItem[]
+  page_id?: number | null
+  menu_id?: number
+  parent_id?: number | null
+  slug?: string
+  specialty_id?: number | null
+  target?: string
+  icon_class?: string | null
+  display_order?: number
+  is_active?: boolean
+  status?: boolean
+  created_at?: string
+  updated_at?: string
 }
 
 export interface NavigationMenu {
