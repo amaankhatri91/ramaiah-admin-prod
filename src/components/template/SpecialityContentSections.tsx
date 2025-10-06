@@ -81,6 +81,7 @@ const SpecialityContentSections: React.FC<SpecialityContentSectionsProps> = ({
             setPages([])
         }
     }, [activeTab, currentTabChildrenData])
+console.log("sfsfsfsfsf");
 
     // Log page data when it changes
     useEffect(() => {
