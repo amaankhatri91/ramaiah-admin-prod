@@ -8,7 +8,7 @@ import * as Yup from 'yup'
 import { ChildrenMenuItem, ChildrenMenuData } from '@/store/slices/base/commonSlice'
 import { useUploadFileMutation } from '@/store/slices/fileUpload/fileUploadApiSlice'
 import toast from '@/components/ui/toast'
-import Notification from '@/components/ui/notification'
+import Notification from '@/components/ui/Notification'
 import { PageSectionsData } from '@/services/HomeService'
 
 interface SpecialityContentSectionsProps {
