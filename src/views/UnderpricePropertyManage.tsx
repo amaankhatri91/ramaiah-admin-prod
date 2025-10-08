@@ -61,7 +61,7 @@ const UnderpricePropertyManage = () => {
     const [rightSelectAllClicked, setRightSelectAllClicked] = useState(false)
     const fileInputRef = useRef<HTMLInputElement | null>(null)
     const [uploading, setUploading] = useState(false)
-
+console.log('leftPanelItems', leftPanelItems)
     useEffect(() => {
         const fetchLeftPanel = async () => {
             try {
