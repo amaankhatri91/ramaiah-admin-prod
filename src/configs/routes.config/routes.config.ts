@@ -20,7 +20,7 @@ export const protectedRoutes = [
     {
         key: 'footer',
         path: '/footer',
-        component: lazy(() => import('@/views/Footer')),
+        component: lazy(() => import('../../views/Footer')),
         authority: [],
     },
     {
