@@ -22,8 +22,8 @@ export default defineConfig({
   build: {
     outDir: "build",
   },
-  preview: {
-    allowedHosts: ["pricefaster.onrender.com"], // Allow your Render domain
-    host: "0.0.0.0", // Bind to all network interfaces
-  },
+  // preview: {
+  //   allowedHosts: ["pricefaster.onrender.com"], // Allow your Render domain
+  //   host: "0.0.0.0", // Bind to all network interfaces
+  // },
 });
