@@ -293,7 +293,7 @@ const SecondHeader = () => {
         settings: [
           {
             id: settingsData.find(s => s.setting_key === 'site_logo')?.id || 0,
-            setting_value: values.companyLogo.startsWith('/uploads/') ? values.companyLogo : `/uploads/${values.companyLogo}`
+            setting_value:  `${values.companyLogo}`
           },
           {
             id: settingsData.find(s => s.setting_key === 'site_tagline')?.id || 0,
@@ -309,7 +309,7 @@ const SecondHeader = () => {
         if (settingId) {
           updatePayload.settings.push({
             id: settingId,
-            setting_value: logo.name.startsWith('/uploads/') ? logo.name : `/uploads/${logo.name}`
+            setting_value: `${logo.name}`
           })
         }
       })

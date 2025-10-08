@@ -264,15 +264,15 @@ const Topheader = () => {
                     },
                     {
                         id: settingsData.find(s => s.setting_key === 'in_affiliation_with')?.id || 0,
-                        setting_value: values.logoFileName.startsWith('/uploads/') ? values.logoFileName : `/uploads/${values.logoFileName}`
+                        setting_value:  `${values.logoFileName}`
                     },
                     {
                         id: settingsData.find(s => s.setting_key === 'content_search_icon')?.id || 0,
-                        setting_value: values.contentSearchIconFileName.startsWith('/uploads/') ? values.contentSearchIconFileName : `/uploads/${values.contentSearchIconFileName}`
+                        setting_value:`${values.contentSearchIconFileName}`
                     },
                     {
                         id: settingsData.find(s => s.setting_key === 'ambulance_logo')?.id || 0,
-                        setting_value: values.ambulanceLogoFileName.startsWith('/uploads/') ? values.ambulanceLogoFileName : `/uploads/${values.ambulanceLogoFileName}`
+                        setting_value: `${values.ambulanceLogoFileName}`
                     }
                 ]
             }

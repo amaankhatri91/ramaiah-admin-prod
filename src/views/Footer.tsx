@@ -326,7 +326,7 @@ const Footer = () => {
                                                         {values.urlFile && values.urlFile.match(/\.(png|jpg|jpeg|gif|svg|webp)$/i) && (
                                                             <div className="mt-2">
                                                                 <img
-                                                                    src={values.urlFile.startsWith('http') ? values.urlFile : `/uploads/${values.urlFile}`}
+                                                                    src={values.urlFile.startsWith('http') ? values.urlFile : `${values.urlFile}`}
                                                                     alt="Uploaded file preview"
                                                                     className="w-full h-32 object-cover rounded-[12px] border border-gray-200"
                                                                     onError={(e) => {
