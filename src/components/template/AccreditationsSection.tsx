@@ -256,10 +256,10 @@ const AccreditationsSection = () => {
                     const hasChanges = nameChanged || mediaFileIdChanged
                     
                     if (hasChanges) {
-                        // Find existing image block for this certificate
+                        // Find existing image block for this certificate by ID (titles may repeat like "JCI")
                         const existingBlock = accreditationBlocks.find(block => 
                             block.block_type === 'image' && 
-                            block.title === (initialCertificate?.name || certificate.name)
+                            String(block.id) === certificate.id
                         )
                         
                         const contentBlock: any = {
