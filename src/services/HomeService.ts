@@ -209,11 +209,22 @@ export const parseOurJourneySection = (blocks: ContentBlock[]) => {
     
     // Third object (display_order: 3) - Image with media file
     const imageBlock = sortedBlocks.find(block => block.display_order === 3 && block.block_type === 'image')
+
+    const formatContentForDisplay = (content: string) => {
+        if (!content) return ''
+        // Keep HTML formatting but convert paragraph breaks to single paragraph
+        return content
+            .replace(/<p[^>]*>/gi, '') // Remove opening <p> tags
+            .replace(/<\/p>/gi, ' ') // Replace closing </p> tags with space
+            .replace(/<br\s*\/?>/gi, ' ') // Replace <br> tags with space
+            .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+            .trim()
+    }
     
     return {
         headerText: titleBlock?.title || 'Our Journey',
         subHeaderText: '',
-        content: contentBlock?.content || '',
+        content: formatContentForDisplay(contentBlock?.content || ''),
         uploadFile: imageBlock?.media_files?.[0]?.media_file?.original_filename || '',
         uploadFileMediaId: imageBlock?.media_files?.[0]?.media_file?.id
     }

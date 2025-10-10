@@ -7,6 +7,7 @@ import { useGetHomeDataQuery, useUpdateHomeSectionMutation } from '@/store/slice
 import { useUploadFileMutation } from '@/store/slices/fileUpload/fileUploadApiSlice'
 import { parseOurJourneySection } from '@/services/HomeService'
 import { toast, Notification } from '@/components/ui'
+import { RichTextEditor } from '@/components/shared'
 
 type OurJourneyFormSchema = {
     headerText: string
@@ -323,20 +324,48 @@ const OurJourneySection = () => {
                                 </div>
 
                                 {/* Content Section */}
-                                <div className="">
+                                <div className="mb-6">
                                     <FormItem
                                         label="Content"
                                         labelClass="text-[#495057] font-inter text-[14px] font-medium leading-normal"
                                         invalid={(errors.content && touched.content) as boolean}
                                         errorMessage={errors.content}
                                     >
-                                        <Field
-                                            name="content"
-                                            as="textarea"
-                                            className="w-full !rounded-[24px] border-[0.75px] border-[#CED4DA] p-4 bg-white text-gray-700 font-medium leading-relaxed resize-vertical min-h-[120px] focus:border-purple-500 focus:ring-purple-500"
-                                            placeholder="Enter content text"
-                                            rows={6}
-                                        />
+                                        <Field name="content">
+                                            {({ field, form }: any) => (
+                                                <RichTextEditor
+                                                    value={field.value || ''}
+                                                    onChange={(value) => form.setFieldValue('content', value)}
+                                                    placeholder="Enter content text"
+                                                    theme="snow"
+                                                    modules={{
+                                                        toolbar: [
+                                                            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                                                            ['bold', 'italic', 'underline', 'strike'],
+                                                            [{ 'color': ['#305FC2','#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#00ADEF', '#D60F8C'] }, { 'background': ['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#00ADEF', '#D60F8C'] }],
+                                                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                                            [{ 'indent': '-1'}, { 'indent': '+1' }],
+                                                            [{ 'align': [] }],
+                                                            ['link', 'image'],
+                                                            ['clean']
+                                                        ],
+                                                        clipboard: {
+                                                            matchVisual: false
+                                                        }
+                                                    }}
+                                                    formats={[
+                                                        'header', 'bold', 'italic', 'underline', 'strike',
+                                                        'color', 'background', 'list', 'bullet', 'indent',
+                                                        'align', 'link', 'image'
+                                                    ]}
+                                                    style={{
+                                                        minHeight: '200px',
+                                                        borderRadius: '24px',
+                                                        border: '0.75px solid #CED4DA'
+                                                    }}
+                                                />
+                                            )}
+                                        </Field>
                                     </FormItem>
                                 </div>
 
