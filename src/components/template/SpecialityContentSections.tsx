@@ -151,7 +151,9 @@ console.log("sfsfsfsfsf");
         buttonText: 'Book Appointment',
         buttonLink: 'https://www.somepagelink.com',
         heroImage: null as File | null,
-        heroVideo: 'In affiliation.mp4'
+        heroImageFileName: 'In affiliation.mp4',
+        heroBgImage: null as File | null,
+        heroBgImageFileName: 'In affiliation.mp4'
     })
 
     const [audioSection, setAudioSection] = useState({
@@ -372,6 +374,94 @@ console.log("sfsfsfsfsf");
                         ...overviewSection,
                         image: file,
                         imageFileName: responseData.filePath
+                    })
+                }
+            } else {
+                throw new Error(result.message)
+            }
+        } catch (error: any) {
+            const errorMessage = error?.data?.message || error?.message || 'File upload failed'
+            toast.push(
+                <Notification type="danger" duration={2500} title="Upload Failed">
+                    {errorMessage}
+                </Notification>,
+                { placement: 'top-end' }
+            )
+        }
+    }
+
+    const handleHeroImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0]
+        if (!file) return
+
+        try {
+            const result = await uploadFile({ file }).unwrap()
+
+            if (result.status === 1) {
+                toast.push(
+                    <Notification type="success" duration={2500} title="Upload Success">
+                        {result.message}
+                    </Notification>,
+                    { placement: 'top-end' }
+                )
+
+                // Update the hero section with the uploaded file info
+                const responseData = result.data as any
+                if (responseData?.savedMedia?.original_filename) {
+                    setHeroSection({
+                        ...heroSection,
+                        heroImage: file,
+                        heroImageFileName: responseData.savedMedia.original_filename
+                    })
+                } else if (responseData?.filePath) {
+                    setHeroSection({
+                        ...heroSection,
+                        heroImage: file,
+                        heroImageFileName: responseData.filePath
+                    })
+                }
+            } else {
+                throw new Error(result.message)
+            }
+        } catch (error: any) {
+            const errorMessage = error?.data?.message || error?.message || 'File upload failed'
+            toast.push(
+                <Notification type="danger" duration={2500} title="Upload Failed">
+                    {errorMessage}
+                </Notification>,
+                { placement: 'top-end' }
+            )
+        }
+    }
+
+    const handleHeroBgImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0]
+        if (!file) return
+
+        try {
+            const result = await uploadFile({ file }).unwrap()
+
+            if (result.status === 1) {
+                toast.push(
+                    <Notification type="success" duration={2500} title="Upload Success">
+                        {result.message}
+                    </Notification>,
+                    { placement: 'top-end' }
+                )
+
+                // Update the hero section with the uploaded background image file info
+                const responseData = result.data as any
+                if (responseData?.savedMedia?.original_filename) {
+                    setHeroSection({
+                        ...heroSection,
+                        heroBgImage: file,
+                        heroBgImageFileName: responseData.savedMedia.original_filename
+                    })
+                } else if (responseData?.filePath) {
+                    setHeroSection({
+                        ...heroSection,
+                        heroBgImage: file,
+                        heroBgImageFileName: responseData.filePath
                     })
                 }
             } else {
@@ -658,41 +748,52 @@ console.log("sfsfsfsfsf");
                         className="w-full px-4 py-3 border border-gray-300 rounded-[24px]  "
                     />
                 </div>
-
-
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Button Text</label>
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Upload image</label>
+                    <div className="flex items-center gap-3">
                         <input
                             type="text"
-                            value={heroSection.buttonText}
-                            onChange={(e) => setHeroSection({ ...heroSection, buttonText: e.target.value })}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-[24px]  "
+                            value={heroSection.heroImageFileName}
+                            readOnly
+                            className="flex-1 px-4 py-3 border border-gray-300 rounded-[24px] bg-white text-gray-700"
                         />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Button Link</label>
                         <input
-                            type="text"
-                            value={heroSection.buttonLink}
-                            onChange={(e) => setHeroSection({ ...heroSection, buttonLink: e.target.value })}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-[24px]  "
+                            type="file"
+                            accept="image/*,video/*"
+                            onChange={handleHeroImageUpload}
+                            className="hidden"
+                            id="hero-image-upload"
                         />
+                        <label
+                            htmlFor="hero-image-upload"
+                            className="px-4 py-3 hover:bg-gray-100 text-gray-700 rounded-[24px] bg-gray-200 transition-colors cursor-pointer"
+                        >
+                            Upload File
+                        </label>
                     </div>
                 </div>
                 <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Hero Section Video</label>
-                    <div className="flex items-center gap-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Upload Bg image</label>
+                    <div className="flex items-center gap-3">
                         <input
                             type="text"
-                            value={heroSection.heroVideo}
-                            onChange={(e) => setHeroSection({ ...heroSection, heroVideo: e.target.value })}
-                            className="flex-1 px-4 py-3 border border-gray-300 rounded-[24px]  "
+                            value={heroSection.heroBgImageFileName}
+                            readOnly
+                            className="flex-1 px-4 py-3 border border-gray-300 rounded-[24px] bg-white text-gray-700"
                         />
-                        <button className="px-4 py-3 hover:bg-gray-100 text-gray-700 rounded-[24px] bg-gray-200 transition-colors">
+                        <input
+                            type="file"
+                            accept="image/*,video/*"
+                            onChange={handleHeroBgImageUpload}
+                            className="hidden"
+                            id="hero-bg-image-upload"
+                        />
+                        <label
+                            htmlFor="hero-bg-image-upload"
+                            className="px-4 py-3 hover:bg-gray-100 text-gray-700 rounded-[24px] bg-gray-200 transition-colors cursor-pointer"
+                        >
                             Upload File
-                        </button>
+                        </label>
                     </div>
                 </div>
 
@@ -896,131 +997,6 @@ console.log("sfsfsfsfsf");
                     </Button>
                 </div>
             </div>
-
-            {/* Enquiry Form Section */}
-            <div className="mb-6 p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-                <h3 className="text-[#495057] font-inter text-[16px] font-semibold leading-normal mb-6">Enquiry Form Section</h3>
-
-                {/* Full Name */}
-                <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                    <input
-                        type="text"
-                        value={enquiryFormSection.fullName}
-                        onChange={(e) => setEnquiryFormSection({ ...enquiryFormSection, fullName: e.target.value })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-[24px] bg-white"
-                        placeholder="Please enter your full name"
-                    />
-                </div>
-
-                {/* Phone Number */}
-                <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                    <input
-                        type="tel"
-                        value={enquiryFormSection.phoneNumber}
-                        onChange={(e) => setEnquiryFormSection({ ...enquiryFormSection, phoneNumber: e.target.value })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-[24px] bg-white"
-                        placeholder="Please enter your phone number"
-                    />
-                </div>
-
-                {/* Email */}
-                <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                    <input
-                        type="email"
-                        value={enquiryFormSection.email}
-                        onChange={(e) => setEnquiryFormSection({ ...enquiryFormSection, email: e.target.value })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-[24px] bg-white"
-                        placeholder="Please enter your email address"
-                    />
-                </div>
-
-                {/* Message */}
-                <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
-                    <textarea
-                        rows={4}
-                        value={enquiryFormSection.message}
-                        onChange={(e) => setEnquiryFormSection({ ...enquiryFormSection, message: e.target.value })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-[24px] bg-white resize-none"
-                        placeholder="Please enter your message"
-                    />
-                </div>
-
-                <div className="flex justify-end">
-                    <Button
-                        onClick={handleSaveEnquiryFormSection}
-                        className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white px-4 py-2 font-medium transition-all duration-200"
-                    >
-                        Save
-                    </Button>
-                </div>
-            </div>
-
-            {/* Our Experts Section */}
-            <div className="mb-6 p-4 border bg-white border-gray-200 rounded-lg">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-700">Our Experts Section</h3>
-                    <button
-                        onClick={handleAddExpert}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                        <HiPlus className="w-4 h-4" />
-                        Add New
-                    </button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Header Text</label>
-                        <input
-                            type="text"
-                            value={expertsSection.headerText}
-                            onChange={(e) => setExpertsSection({ ...expertsSection, headerText: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg  "
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Sub Header Text</label>
-                        <input
-                            type="text"
-                            value={expertsSection.subHeaderText}
-                            onChange={(e) => setExpertsSection({ ...expertsSection, subHeaderText: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg  "
-                            placeholder="Enter sub header text"
-                        />
-                    </div>
-                </div>
-                <div className="space-y-2 mb-4">
-                    {experts.map((expert, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <span className="text-gray-700">{expert}</span>
-                            <div className="flex items-center gap-2">
-                                <button className="p-2 text-gray-400 hover:text-blue-600 transition-colors">
-                                    <img src="/img/images/Edittable.svg" alt="edit" className="w-5 h-5" />
-                                </button>
-                                <button
-                                    onClick={() => handleDeleteExpert(index)}
-                                    className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                                >
-                                    <img src="/img/images/deatetable.svg" alt="delete" className="w-5 h-5" />
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                <div className="flex justify-end">
-                    <button
-                        onClick={handleSaveExpertsSection}
-                        className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                    >
-                        Save
-                    </button>
-                </div>
-            </div>
-
-
 
             {/* Why Choose Us Section */}
             <Card className="bg-white rounded-xl">

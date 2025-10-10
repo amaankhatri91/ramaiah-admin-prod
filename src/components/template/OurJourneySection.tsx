@@ -360,8 +360,8 @@ const OurJourneySection = () => {
                                                     ]}
                                                     style={{
                                                         minHeight: '200px',
-                                                        borderRadius: '24px',
-                                                        border: '0.75px solid #CED4DA'
+                                                        // borderRadius: '24px',
+                                                        // border: '0.75px solid #CED4DA'
                                                     }}
                                                 />
                                             )}
