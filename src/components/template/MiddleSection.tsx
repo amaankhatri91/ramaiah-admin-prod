@@ -60,7 +60,7 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
             block.title && 
             block.title.includes('Legacy & Clinical Excellence')
         )
-        const headerText = headerBlock?.title || "Our 20+ Years of Legacy & Clinical Excellence"
+        const headerText = headerBlock?.title 
         
         // Second object: Text block with content (Sub Header Text)
         const contentBlock = middleBlocks.find(block => 
@@ -144,19 +144,26 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
         try {
             // Get the current middle section data to build the update structure
             const middleBlocks = homeData?.data?.filter(block => block.section_id === sectionId) || []
+            console.log('Middle blocks:', middleBlocks)
             
             // Find existing content blocks based on the three objects structure
-            const headerBlock = middleBlocks.find(block => 
-                block.block_type === 'text' && 
-                block.title && 
-                block.title.includes('Legacy & Clinical Excellence')
-            )
-            const contentBlock = middleBlocks.find(block => 
-                block.block_type === 'text' && 
-                block.content && 
-                block.content.includes('Ramaiah Memorial Hospital')
-            )
+            // const headerBlock = middleBlocks.find(block => 
+            //     block.block_type === 'text' && 
+            //     block.title && 
+            //     block.title.includes('Legacy & Clinical Excellence')
+            // )
+            // const contentBlock = middleBlocks.find(block => 
+            //     block.block_type === 'text' && 
+            //     block.content && 
+            //     block.content.includes('Ramaiah Memorial Hospital')
+            // )
+            // console.log('Content block:', contentBlock)
+            const headerBlock = middleBlocks.find(block => block.block_type === 'text')
+            const contentBlock = middleBlocks.find(block => block.block_type === 'custom')
             const videoBlock = middleBlocks.find(block => block.block_type === 'video')
+            console.log('Header block:', headerBlock)
+            console.log('Content block:', contentBlock)
+            console.log('Video block:', videoBlock)
             
             // Get initial values to compare changes
             if (!initialFormValues) {
@@ -189,8 +196,10 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
                         id: headerBlock.id,
                         block_type: headerBlock.block_type,
                         title: values.headerText,
-                        content: values.headerText
+                        content: values.headerText,
+                        display_order: headerBlock.display_order
                     })
+                    console.log('Header block updated:', contentBlocks)
                 } else {
                     // Create new header block
                 contentBlocks.push({
@@ -217,7 +226,8 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
                         id: contentBlock.id,
                         block_type: contentBlock.block_type,
                         title: contentBlock.title,
-                        content: values.subHeaderText
+                        content: values.subHeaderText,
+                        display_order: contentBlock.display_order
                     })
                 } else {
                     // Create new content block
@@ -248,14 +258,17 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
                     id: videoBlock.id,
                     block_type: videoBlock.block_type,
                     title: videoBlock.title,
-                        media_files: values.doctorSpeakVideoMediaFileId ? [{
-                            id: videoBlock.media_files?.[0]?.id || Date.now(),
+                    content: videoBlock.content,
+                    display_order: videoBlock.display_order,
+                    media_files: values.doctorSpeakVideoMediaFileId ? [{
+                        id: videoBlock.media_files?.[0]?.id || Date.now(),
                         content_block_id: videoBlock.id,
                         media_file_id: values.doctorSpeakVideoMediaFileId,
                         media_type: "primary", // Video should be primary
                         display_order: 1
-                        }] : []
-                    })
+                    }] : []
+                })
+                console.log('Video block updated:', contentBlocks)
                 } else {
                     // Create new video block
                     contentBlocks.push({
