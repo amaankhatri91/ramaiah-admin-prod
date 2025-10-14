@@ -50,9 +50,9 @@ const OurJourneySection = () => {
             }
         }
         
-        console.log('Raw home data for Our Journey:', homeData.data)
+        // console.log('Raw home data for Our Journey:', homeData.data)
         const journeyData = parseOurJourneySection(homeData.data)
-        console.log('Parsed journey data:', journeyData)
+    
         
         const initialValues = {
             headerText: journeyData.headerText || "",
@@ -61,7 +61,7 @@ const OurJourneySection = () => {
             uploadFileMediaId: (journeyData as any).uploadFileMediaId
         }
         
-        console.log('Final initial values:', initialValues)
+        // console.log('Final initial values:', initialValues)
         return initialValues
     }
 
