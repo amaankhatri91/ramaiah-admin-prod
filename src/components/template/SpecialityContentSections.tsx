@@ -35,6 +35,15 @@ const SpecialityContentSections: React.FC<SpecialityContentSectionsProps> = ({
 }) => {
     const [uploadFile, { isLoading: isUploading }] = useUploadFileMutation()
     const [updatePageSection, { isLoading: isUpdating }] = useUpdatePageSectionMutation()
+    
+    // Separate loading states for each section
+    const [isHeroSaving, setIsHeroSaving] = useState(false)
+    const [isOverviewSaving, setIsOverviewSaving] = useState(false)
+    
+    // Separate loading states for each upload button
+    const [isHeroImageUploading, setIsHeroImageUploading] = useState(false)
+    const [isHeroBgImageUploading, setIsHeroBgImageUploading] = useState(false)
+    const [isOverviewImageUploading, setIsOverviewImageUploading] = useState(false)
     console.log("activeTab",pageId);
     // Get the current active tab's data
     const getCurrentTabData = () => {
@@ -425,6 +434,7 @@ console.log("overviewSection",overviewSection);
             return
         }
 
+        setIsHeroSaving(true)
         try {
             // Get current page data to find hero section
             const currentPageData = pageData?.[pageId]?.data
@@ -538,6 +548,8 @@ console.log("overviewSection",overviewSection);
                 </Notification>,
                 { placement: 'top-end' }
             )
+        } finally {
+            setIsHeroSaving(false)
         }
     }
 
@@ -550,6 +562,7 @@ console.log("overviewSection",overviewSection);
         const file = event.target.files?.[0]
         if (!file) return
 
+        setIsOverviewImageUploading(true)
         try {
             const result = await uploadFile({ file }).unwrap()
 
@@ -589,6 +602,8 @@ console.log("overviewSection",overviewSection);
                 </Notification>,
                 { placement: 'top-end' }
             )
+        } finally {
+            setIsOverviewImageUploading(false)
         }
     }
 
@@ -596,6 +611,7 @@ console.log("overviewSection",overviewSection);
         const file = event.target.files?.[0]
         if (!file) return
 
+        setIsHeroImageUploading(true)
         try {
             const result = await uploadFile({ file }).unwrap()
 
@@ -635,6 +651,8 @@ console.log("overviewSection",overviewSection);
                 </Notification>,
                 { placement: 'top-end' }
             )
+        } finally {
+            setIsHeroImageUploading(false)
         }
     }
 
@@ -642,6 +660,7 @@ console.log("overviewSection",overviewSection);
         const file = event.target.files?.[0]
         if (!file) return
 
+        setIsHeroBgImageUploading(true)
         try {
             const result = await uploadFile({ file }).unwrap()
 
@@ -681,6 +700,8 @@ console.log("overviewSection",overviewSection);
                 </Notification>,
                 { placement: 'top-end' }
             )
+        } finally {
+            setIsHeroBgImageUploading(false)
         }
     }
 
@@ -695,6 +716,7 @@ console.log("overviewSection",overviewSection);
             return
         }
 
+        setIsOverviewSaving(true)
         try {
             // Get current page data to find overview section
             const currentPageData = pageData?.[pageId]?.data
@@ -800,6 +822,8 @@ console.log("overviewSection",overviewSection);
                 </Notification>,
                 { placement: 'top-end' }
             )
+        } finally {
+            setIsOverviewSaving(false)
         }
     }
 
@@ -1281,12 +1305,13 @@ console.log("overviewSection",overviewSection);
                             onChange={handleHeroImageUpload}
                             className="hidden"
                             id="hero-image-upload"
+                            disabled={isHeroImageUploading}
                         />
                         <label
                             htmlFor="hero-image-upload"
-                            className="px-4 py-3 hover:bg-gray-100 text-gray-700 rounded-[24px] bg-gray-200 transition-colors cursor-pointer"
+                            className={`px-4 py-3 hover:bg-gray-100 text-gray-700 rounded-[24px] bg-gray-200 transition-colors cursor-pointer ${isHeroImageUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
-                            Upload File
+                            {isHeroImageUploading ? 'Uploading...' : 'Upload File'}
                         </label>
                     </div>
                 </div>
@@ -1305,12 +1330,13 @@ console.log("overviewSection",overviewSection);
                             onChange={handleHeroBgImageUpload}
                             className="hidden"
                             id="hero-bg-image-upload"
+                            disabled={isHeroBgImageUploading}
                         />
                         <label
                             htmlFor="hero-bg-image-upload"
-                            className="px-4 py-3 hover:bg-gray-100 text-gray-700 rounded-[24px] bg-gray-200 transition-colors cursor-pointer"
+                            className={`px-4 py-3 hover:bg-gray-100 text-gray-700 rounded-[24px] bg-gray-200 transition-colors cursor-pointer ${isHeroBgImageUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
-                            Upload File
+                            {isHeroBgImageUploading ? 'Uploading...' : 'Upload File'}
                         </label>
                     </div>
                 </div>
@@ -1318,10 +1344,10 @@ console.log("overviewSection",overviewSection);
                 <div className="flex justify-end">
                     <Button
                         onClick={handleSaveHeroSection}
-                        loading={isUpdating}
+                        loading={isHeroSaving}
                         className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white px-4 py-2 font-medium transition-all duration-200"
                     >
-                        {isUpdating ? 'Saving...' : 'Save'}
+                        {isHeroSaving ? 'Saving...' : 'Save'}
                     </Button>
                 </div>
             </div>
@@ -1370,22 +1396,23 @@ console.log("overviewSection",overviewSection);
                             onChange={handleImageUpload}
                             className="hidden"
                             id="overview-image-upload"
+                            disabled={isOverviewImageUploading}
                         />
                         <label
                             htmlFor="overview-image-upload"
-                            className="px-4 py-3 hover:bg-gray-100 text-gray-700 rounded-[24px] bg-gray-200 transition-colors"
+                            className={`px-4 py-3 hover:bg-gray-100 text-gray-700 rounded-[24px] bg-gray-200 transition-colors cursor-pointer ${isOverviewImageUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
-                            Upload File
+                            {isOverviewImageUploading ? 'Uploading...' : 'Upload File'}
                         </label>
                     </div>
                 </div>
                 <div className="flex justify-end">
                     <Button
                         onClick={handleSaveOverviewSection}
-                        loading={isUpdating}
+                        loading={isOverviewSaving}
                         className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white px-4 py-2 font-medium transition-all duration-200"
                     >
-                        {isUpdating ? 'Saving...' : 'Save'}
+                        {isOverviewSaving ? 'Saving...' : 'Save'}
                     </Button>
                 </div>
             </div>
