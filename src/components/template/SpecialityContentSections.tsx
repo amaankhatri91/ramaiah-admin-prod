@@ -120,6 +120,10 @@ console.log("pageDataaaaaaa",pageData);
                     const heroImageBlock = heroSection.content_blocks.find((block: any) => 
                         block.block_type === 'image' && block.media_files && block.media_files.length > 0
                     )
+
+                    const heroBgImageBlock = heroSection.content_blocks.find((block: any) => 
+                        block.block_type === 'custom' && block.media_files && block.media_files.length > 0
+                    )
                     console.log("heroImageBlock", heroImageBlock);
                     
                     if (heroTextBlock) {
@@ -129,7 +133,8 @@ console.log("pageDataaaaaaa",pageData);
                             descriptionText: `Comprehensive healthcare services for ${activeTab}`,
                             buttonText: 'Book Appointment',
                             buttonLink: `https://www.ramaiah.com/${currentTabData?.url || 'appointment'}`,
-                            heroImageFileName: heroImageBlock?.media_files?.[0]?.media_file?.original_filename || ''
+                            heroImageFileName: heroImageBlock?.media_files?.[0]?.media_file?.original_filename || '',
+                            heroBgImageFileName :heroBgImageBlock?.media_files?.[0]?.media_file?.original_filename || ''
                         }))
                     }
                 }
