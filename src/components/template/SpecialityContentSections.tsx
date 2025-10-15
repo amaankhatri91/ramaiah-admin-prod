@@ -147,18 +147,19 @@ console.log("pageDataaaaaaa",pageData);
                 const overviewSection = pageData[pageId]?.data.find((section: any) => section.name === 'overview')
                 if (overviewSection && overviewSection.content_blocks) {
                     // Find the content block with actual content
+                    const overviewContenttitle = overviewSection.content_blocks.find((block: any) => block.title)
                     const overviewContentBlock = overviewSection.content_blocks.find((block: any) => block.content)
                     
                     // Find the image block for overview image
                     const overviewImageBlock = overviewSection.content_blocks.find((block: any) => 
                         block.block_type === 'image' && block.media_files && block.media_files.length > 0
                     )
-                    console.log("overviewImageBlock", overviewImageBlock);
+                    console.log("overviewContentBlock", overviewContentBlock);
                     
                     if (overviewContentBlock) {
                         setOverviewSection(prev => ({
                             ...prev,
-                            headerText: 'Overview',
+                            headerText: overviewContenttitle.title,
                             overview: overviewContentBlock.content,
                             imageFileName: overviewImageBlock?.media_files?.[0]?.media_file?.original_filename || ''
                         }))
@@ -239,12 +240,13 @@ console.log("heroSectionddd",heroSection);
     })
 
     const [overviewSection, setOverviewSection] = useState({
-        headerText: 'Overview',
+        headerText: '',
         overview: '',
         image: null as File | null,
         imageFileName: 'In affiliation.jpeg',
         imageMediaFileId: undefined as number | undefined
     })
+console.log("overviewSection",overviewSection);
 
     const [coursesSection, setCoursesSection] = useState({
         headerText: 'Our Specialities',
@@ -707,6 +709,19 @@ console.log("heroSectionddd",heroSection);
 
             const contentBlocks: any[] = []
             const changedObjects: string[] = []
+
+            // Update title block if header text changed
+            const overviewTitleBlock = overviewSectionData.content_blocks?.find((block: any) => 
+                block.block_type === 'text' && block.title
+            )
+            if (overviewTitleBlock && overviewSection.headerText !== overviewTitleBlock.title) {
+                contentBlocks.push({
+                    id: overviewTitleBlock.id,
+                    block_type: overviewTitleBlock.block_type,
+                    title: overviewSection.headerText
+                })
+                changedObjects.push('Overview Header Text')
+            }
 
             // Update content block if overview text changed
             const overviewContentBlock = overviewSectionData.content_blocks?.find((block: any) => block.content)
