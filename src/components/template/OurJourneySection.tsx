@@ -235,15 +235,15 @@ const OurJourneySection = () => {
             console.log('Content blocks to update:', contentBlocks)
             
             // Only proceed if there are changes
-            if (contentBlocks.length === 0) {
-                toast.push(
-                    <Notification type="info" duration={2500} title="No Changes">
-                        No changes detected to save.
-                    </Notification>,
-                    { placement: 'top-end' }
-                )
-                return
-            }
+            // if (contentBlocks.length === 0) {
+            //     toast.push(
+            //         <Notification type="info" duration={2500} title="No Changes">
+            //             No changes detected to save.
+            //         </Notification>,
+            //         { placement: 'top-end' }
+            //     )
+            //     return
+            // }
             
             // Update section 7 with all changes (since all blocks are in section 7 now)
             const updateData7 = {

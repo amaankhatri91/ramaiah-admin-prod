@@ -287,16 +287,16 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
             console.log('Changed objects:', changedObjects)
             console.log('Content blocks to update:', contentBlocks)
             
-            // Only proceed if there are changes
-            if (contentBlocks.length === 0) {
-                toast.push(
-                    <Notification type="info" duration={2500} title="No Changes">
-                        No changes detected to save.
-                    </Notification>,
-                    { placement: 'top-end' }
-                )
-                return
-            }
+            // // Only proceed if there are changes
+            // if (contentBlocks.length === 0) {
+            //     toast.push(
+            //         <Notification type="info" duration={2500} title="No Changes">
+            //             No changes detected to save.
+            //         </Notification>,
+            //         { placement: 'top-end' }
+            //     )
+            //     return
+            // }
             
             // Build the update data structure
             const updateData = {

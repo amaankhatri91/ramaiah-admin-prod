@@ -492,15 +492,15 @@ console.log("overviewSection",overviewSection);
             }
 
             // Only proceed if there are changes
-            if (contentBlocks.length === 0) {
-                toast.push(
-                    <Notification type="info" duration={2500} title="No Changes">
-                        No changes detected to save.
-                    </Notification>,
-                    { placement: 'top-end' }
-                )
-                return
-            }
+            // if (contentBlocks.length === 0) {
+            //     toast.push(
+            //         <Notification type="info" duration={2500} title="No Changes">
+            //             No changes detected to save.
+            //         </Notification>,
+            //         { placement: 'top-end' }
+            //     )
+            //     return
+            // }
 
             // Build the update data structure
             const updateData = {
@@ -754,15 +754,15 @@ console.log("overviewSection",overviewSection);
             }
 
             // Only proceed if there are changes
-            if (contentBlocks.length === 0) {
-                toast.push(
-                    <Notification type="info" duration={2500} title="No Changes">
-                        No changes detected to save.
-                    </Notification>,
-                    { placement: 'top-end' }
-                )
-                return
-            }
+            // if (contentBlocks.length === 0) {
+            //     toast.push(
+            //         <Notification type="info" duration={2500} title="No Changes">
+            //             No changes detected to save.
+            //         </Notification>,
+            //         { placement: 'top-end' }
+            //     )
+            //     return
+            // }
 
             // Build the update data structure
             const updateData = {
@@ -860,6 +860,19 @@ console.log("overviewSection",overviewSection);
             const contentBlocks: any[] = []
             const changedObjects: string[] = []
 
+            // Update title block if header text changed
+            const specialitiesTitleBlock = specialitiesSectionData.content_blocks?.find((block: any) => 
+                block.block_type === 'text' && block.title
+            )
+            if (specialitiesTitleBlock && coursesSection.headerText !== specialitiesTitleBlock.title) {
+                contentBlocks.push({
+                    id: specialitiesTitleBlock.id,
+                    block_type: specialitiesTitleBlock.block_type,
+                    title: coursesSection.headerText
+                })
+                changedObjects.push('Our Specialities Header Text')
+            }
+
             // Update specialities data block if courses changed
             const specialitiesDataBlock = specialitiesSectionData.content_blocks?.find((block: any) => 
                 block.specialties && block.specialties.length > 0
@@ -882,15 +895,15 @@ console.log("overviewSection",overviewSection);
             }
 
             // Only proceed if there are changes
-            if (contentBlocks.length === 0) {
-                toast.push(
-                    <Notification type="info" duration={2500} title="No Changes">
-                        No changes detected to save.
-                    </Notification>,
-                    { placement: 'top-end' }
-                )
-                return
-            }
+            // if (contentBlocks.length === 0) {
+            //     toast.push(
+            //         <Notification type="info" duration={2500} title="No Changes">
+            //             No changes detected to save.
+            //         </Notification>,
+            //         { placement: 'top-end' }
+            //     )
+            //     return
+            // }
 
             // Build the update data structure
             const updateData = {
@@ -1013,15 +1026,15 @@ console.log("overviewSection",overviewSection);
             }
 
             // Only proceed if there are changes
-            if (contentBlocks.length === 0) {
-                toast.push(
-                    <Notification type="info" duration={2500} title="No Changes">
-                        No changes detected to save.
-                    </Notification>,
-                    { placement: 'top-end' }
-                )
-                return
-            }
+            // if (contentBlocks.length === 0) {
+            //     toast.push(
+            //         <Notification type="info" duration={2500} title="No Changes">
+            //             No changes detected to save.
+            //         </Notification>,
+            //         { placement: 'top-end' }
+            //     )
+            //     return
+            // }
 
             // Build the update data structure
             const updateData = {
@@ -1417,7 +1430,7 @@ console.log("overviewSection",overviewSection);
                                         placeholder="Enter button text..."
                                     />
                                 </div>
-                                <div>
+                                {/* <div>
                                     <label className="block text-sm font-medium text-gray-600 mb-2">Button Link</label>
                                     <input
                                         type="url"
@@ -1426,7 +1439,7 @@ console.log("overviewSection",overviewSection);
                                         className="w-full px-4 py-3 border border-gray-300 rounded-[24px]   bg-white"
                                         placeholder="Enter button link..."
                                     />
-                                </div>
+                                </div> */}
                             </div>
                         ))}
                     </div>

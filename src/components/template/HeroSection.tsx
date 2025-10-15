@@ -452,15 +452,15 @@ const HeroSection = () => {
             console.log('Content blocks to update:', contentBlocks)
             
             // Only proceed if there are changes
-            if (contentBlocks.length === 0) {
-                toast.push(
-                    <Notification type="info" duration={2500} title="No Changes">
-                        No changes detected to save.
-                    </Notification>,
-                    { placement: 'top-end' }
-                )
-                return
-            }
+            // if (contentBlocks.length === 0) {
+            //     toast.push(
+            //         <Notification type="info" duration={2500} title="No Changes">
+            //             No changes detected to save.
+            //         </Notification>,
+            //         { placement: 'top-end' }
+            //     )
+            //     return
+            // }
             
             // Build the update data structure
             const updateData = {
