@@ -11,6 +11,7 @@ import { useUpdatePageSectionMutation } from '@/store/slices/pageSections/pageSe
 import toast from '@/components/ui/toast'
 import Notification from '@/components/ui/Notification'
 import { PageSectionsData } from '@/services/HomeService'
+import { RichTextEditor } from '@/components/shared'
 
 interface SpecialityContentSectionsProps {
     activeTab: string
@@ -1384,12 +1385,34 @@ console.log("overviewSection",overviewSection);
                 {/* Content */}
                 <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
-                    <textarea
-                        rows={6}
+                    <RichTextEditor
                         value={overviewSection.overview}
-                        onChange={(e) => setOverviewSection({ ...overviewSection, overview: e.target.value })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-[24px]   bg-white resize-none"
+                        onChange={(value) => setOverviewSection({ ...overviewSection, overview: value })}
                         placeholder="Enter content here..."
+                        theme="snow"
+                        modules={{
+                            toolbar: [
+                                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                                ['bold', 'italic', 'underline', 'strike'],
+                                [{ 'color': ['#305FC2','#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#00ADEF', '#D60F8C'] }, { 'background': ['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#00ADEF', '#D60F8C'] }],
+                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                [{ 'indent': '-1'}, { 'indent': '+1' }],
+                                [{ 'align': [] }],
+                                ['link', 'image'],
+                                ['clean']
+                            ],
+                            clipboard: {
+                                matchVisual: false
+                            }
+                        }}
+                        formats={[
+                            'header', 'bold', 'italic', 'underline', 'strike',
+                            'color', 'background', 'list', 'bullet', 'indent',
+                            'align', 'link', 'image'
+                        ]}
+                        style={{
+                            minHeight: '200px',
+                        }}
                     />
                 </div>
 
