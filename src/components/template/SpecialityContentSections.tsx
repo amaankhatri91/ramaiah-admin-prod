@@ -19,6 +19,7 @@ interface SpecialityContentSectionsProps {
     pageData?: { [key: string]: PageSectionsData }
     onNavigateToChildren?: (menuId: number) => void
     onNavigateToGrandchild?: (menuId: number) => void
+    pageId?: number | null
 }
 
 const SpecialityContentSections: React.FC<SpecialityContentSectionsProps> = ({
@@ -28,9 +29,11 @@ const SpecialityContentSections: React.FC<SpecialityContentSectionsProps> = ({
     tabChildrenData,
     pageData,
     onNavigateToChildren,
-    onNavigateToGrandchild
+    onNavigateToGrandchild,
+    pageId
 }) => {
     const [uploadFile, { isLoading: isUploading }] = useUploadFileMutation()
+    console.log("activeTab",pageId);
     // Get the current active tab's data
     const getCurrentTabData = () => {
         if (!childrenMenuData || !availableTabs) return null
@@ -52,6 +55,7 @@ const SpecialityContentSections: React.FC<SpecialityContentSectionsProps> = ({
         if (!pageData || !activeTab) return null
         return pageData[activeTab]
     }
+console.log("pageDataaaaaaa",pageData);
 
     const currentTabData = getCurrentTabData()
     const currentTabChildrenData = getCurrentTabChildrenData()
@@ -81,68 +85,130 @@ const SpecialityContentSections: React.FC<SpecialityContentSectionsProps> = ({
             setPages([])
         }
     }, [activeTab, currentTabChildrenData])
-console.log("sfsfsfsfsf");
 
     // Log page data when it changes
-    useEffect(() => {
-        if (currentPageData && activeTab) {
-            console.log('=== CURRENT PAGE DATA IN SPECIALITY CONTENT ===')
-            console.log('Active Tab:', activeTab)
-            console.log('Page Data:', currentPageData)
-            console.log('Hero Section:', currentPageData.heroSection)
-            console.log('Sections:', currentPageData.sections)
-            console.log('===============================================')
-        }
-    }, [currentPageData, activeTab])
+    // useEffect(() => {
+    //     if (currentPageData && activeTab) {
+    //         console.log('=== CURRENT PAGE DATA IN SPECIALITY CONTENT ===')
+    //         console.log('Active Tab:', activeTab)
+    //         console.log('Page Data:', currentPageData)
+    //         console.log('Hero Section:', currentPageData.heroSection)
+    //         console.log('Sections:', currentPageData.sections)
+    //         console.log('===============================================')
+    //     }
+    // }, [currentPageData, activeTab])
 
     // Update Hero Section content when active tab changes
+    console.log("currentTabData",currentTabData);
     useEffect(() => {
-        if (currentTabData && activeTab) {
-            // Update hero section with tab-specific content
-            setHeroSection(prev => ({
-                ...prev,
-                headerText: currentTabData.title || `Revolutionizing Healthcare with Advanced ${activeTab}`,
-                descriptionText: `Comprehensive healthcare services for ${activeTab}`,
-                buttonText: 'Book Appointment',
-                buttonLink: `https://www.ramaiah.com/${currentTabData.url || 'appointment'}`,
-            }))
+        if (pageData && activeTab) {
+            // const currentPageData = pageData[activeTab]
+            console.log("pageDatassssss",pageData[pageId || '']?.data);
+            // console.log("currentPageDatassss",currentPageData);g
+            if (pageId && pageData[pageId]?.data && Array.isArray(pageData[pageId]?.data)) {
+                // Find the hero section
+                const heroSection = pageData[pageId]?.data.find((section: any) => section.title === 'Hero')
+                console.log("heroSection found:", heroSection);
+                if (heroSection && heroSection.content_blocks) {
+                    // Find the text block with title in hero section
+                    const heroTextBlock = heroSection.content_blocks.find((block: any) => 
+                        block.block_type === 'text' && block.title
+                    )
+                    console.log("heroTextBlockkkkkk", heroTextBlock);
+                    
+                    // Find the image block for hero image
+                    const heroImageBlock = heroSection.content_blocks.find((block: any) => 
+                        block.block_type === 'image' && block.media_files && block.media_files.length > 0
+                    )
+                    console.log("heroImageBlock", heroImageBlock);
+                    
+                    if (heroTextBlock) {
+                        setHeroSection(prev => ({
+                            ...prev,
+                            headerText: heroTextBlock.title,
+                            descriptionText: `Comprehensive healthcare services for ${activeTab}`,
+                            buttonText: 'Book Appointment',
+                            buttonLink: `https://www.ramaiah.com/${currentTabData?.url || 'appointment'}`,
+                            heroImageFileName: heroImageBlock?.media_files?.[0]?.media_file?.original_filename || ''
+                        }))
+                    }
+                }
+            }
 
             // Update overview section with tab-specific content
-            setOverviewSection(prev => ({
-                ...prev,
-                headerText: 'Overview',
-                overview: `We are always indebted to Our Founder DR. M S Ramaiah, a visionary who built Institutions that redefined learning. The ${activeTab} represents our commitment to excellence in healthcare delivery.\n\nOur ${activeTab} combines cutting-edge technology with compassionate care, ensuring that every patient receives the highest quality treatment. We believe that investment in specialized healthcare services is the way forward for the development & progress of the nation.`,
-            }))
+            if (pageId && pageData[pageId]?.data && Array.isArray(pageData[pageId]?.data)) {
+                const overviewSection = pageData[pageId]?.data.find((section: any) => section.name === 'overview')
+                if (overviewSection && overviewSection.content_blocks) {
+                    // Find the content block with actual content
+                    const overviewContentBlock = overviewSection.content_blocks.find((block: any) => block.content)
+                    
+                    // Find the image block for overview image
+                    const overviewImageBlock = overviewSection.content_blocks.find((block: any) => 
+                        block.block_type === 'image' && block.media_files && block.media_files.length > 0
+                    )
+                    console.log("overviewImageBlock", overviewImageBlock);
+                    
+                    if (overviewContentBlock) {
+                        setOverviewSection(prev => ({
+                            ...prev,
+                            headerText: 'Overview',
+                            overview: overviewContentBlock.content,
+                            imageFileName: overviewImageBlock?.media_files?.[0]?.media_file?.original_filename || ''
+                        }))
+                    }
+                }
+            }
 
             // Update courses section with tab-specific content
-            setCoursesSection(prev => ({
-                ...prev,
-                headerText: 'Our Specialities',
-                courses: [
-                    { id: 1, text: `${activeTab} - Advanced Treatment`, link: '' },
-                    { id: 2, text: `${activeTab} - Diagnostic Services`, link: '' },
-                    { id: 3, text: `${activeTab} - Surgical Procedures`, link: '' },
-                    { id: 4, text: `${activeTab} - Rehabilitation`, link: '' },
-                    { id: 5, text: `${activeTab} - Follow-up Care`, link: '' }
-                ]
-            }))
+            if (pageId && pageData[pageId]?.data && Array.isArray(pageData[pageId]?.data)) {
+                const specialitiesSection = pageData[pageId]?.data.find((section: any) => section.name === 'our specialities')
+                if (specialitiesSection && specialitiesSection.content_blocks) {
+                    // Find the content block with specialties
+                    const specialitiesDataBlock = specialitiesSection.content_blocks.find((block: any) => 
+                        block.specialties && block.specialties.length > 0
+                    )
+                    
+                    if (specialitiesDataBlock?.specialties) {
+                        const courses = specialitiesDataBlock.specialties.map((specialty: any, index: number) => ({
+                            id: specialty.id || index + 1,
+                            text: specialty.name || '',
+                            link: ''
+                        }))
+                        
+                        setCoursesSection(prev => ({
+                            ...prev,
+                            headerText: 'Our Specialities',
+                            courses: courses
+                        }))
+                    }
+                }
+            }
 
             // Update services section with tab-specific content
-            setServicesFacilitiesSection(prev => ({
-                ...prev,
-                headerText: 'Services & Facilities',
-                services: [
-                    { id: 1, text: `${activeTab} - Outpatient Services` },
-                    { id: 2, text: `${activeTab} - Inpatient Wards` },
-                    { id: 3, text: `${activeTab} - Daycare Units` },
-                    { id: 4, text: `${activeTab} - Advanced Diagnostics` },
-                    { id: 5, text: `${activeTab} - Surgical Facilities` },
-                    { id: 6, text: `${activeTab} - Consultation Services` },
-                    { id: 7, text: `${activeTab} - Emergency Care` }
-                ]
-            }))
+            if (pageId && pageData[pageId]?.data && Array.isArray(pageData[pageId]?.data)) {
+                const servicesSection = pageData[pageId]?.data.find((section: any) => section.name === 'service & facilities')
+                if (servicesSection && servicesSection.content_blocks) {
+                    // Find the content block with facility specialties
+                    const servicesDataBlock = servicesSection.content_blocks.find((block: any) => 
+                        block.facilitySpecialties && block.facilitySpecialties.length > 0
+                    )
+                    
+                    if (servicesDataBlock?.facilitySpecialties) {
+                        const services = servicesDataBlock.facilitySpecialties.map((facilitySpecialty: any, index: number) => ({
+                            id: facilitySpecialty.id || index + 1,
+                            text: facilitySpecialty.facility?.name || ''
+                        }))
+                        
+                        setServicesFacilitiesSection(prev => ({
+                            ...prev,
+                            headerText: 'Services & Facilities',
+                            services: services
+                        }))
+                    }
+                }
+            }
         }
-    }, [activeTab, currentTabData])
+    }, [pageData, activeTab, currentTabData, pageId])
 
     // Form states for different sections - now dynamic based on active tab
     const [heroSection, setHeroSection] = useState({
@@ -151,10 +217,11 @@ console.log("sfsfsfsfsf");
         buttonText: 'Book Appointment',
         buttonLink: 'https://www.somepagelink.com',
         heroImage: null as File | null,
-        heroImageFileName: 'In affiliation.mp4',
+        heroImageFileName: '',
         heroBgImage: null as File | null,
-        heroBgImageFileName: 'In affiliation.mp4'
+        heroBgImageFileName: ''
     })
+console.log("heroSectionddd",heroSection);
 
     const [audioSection, setAudioSection] = useState({
         headerText: '',

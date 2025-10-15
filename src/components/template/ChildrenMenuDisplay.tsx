@@ -23,6 +23,7 @@ const ChildrenMenuDisplay = () => {
     
     // State for page data and loading
     const [pageData, setPageData] = useState<{[key: string]: PageSectionsData}>({})
+    const [pageId, setPageId] = useState<number | null>(null)
     const [loadingPageData, setLoadingPageData] = useState<number | null>(null)
 
     // Function to load tab data
@@ -85,21 +86,29 @@ const ChildrenMenuDisplay = () => {
             const response = await apiGetPageSections(pageId)
             
             if (response.data) {
-                const pageData = response.data as PageSectionsData
-                setPageData(prev => ({
-                    ...prev,
-                    [pageId]: pageData
-                }))
+                // The API response is an array of sections directly
+                const sectionsData = response.data 
+                console.log("sectionsDatarrrrrs",sectionsData);
+            
                 
-                // Log the fetched data as requested
-                console.log('=== PAGE DATA FETCHED ===')
-                console.log('Tab Title:', tabTitle)
-                console.log('Tab ID:', tabId)
-                console.log('Page ID used:', pageId)
-                console.log('Hero Section:', pageData.heroSection)
-                console.log('All Sections:', pageData.sections)
-                console.log('Full Response Data:', pageData)
-                console.log('========================')
+                if (Array.isArray(sectionsData)) {
+                    console.log('📝 Section Names:', sectionsData.map(section => section.name))
+                    sectionsData.forEach((section, index) => {
+                        console.log(`   Section ${index + 1}: ${section.name} (ID: ${section.id})`)
+                    })
+                }
+                const currentPageId = sectionsData.data[0].page_id
+                setPageId(currentPageId)
+                setPageData(prev => {
+                    const newPageData = {
+                        ...prev,
+                        [currentPageId]: sectionsData
+                    }
+                    console.log('💾 SAVING TO PAGE DATA STATE:', newPageData)
+                    return newPageData
+                })
+                
+                console.log('✅ === PAGE DATA SAVED TO STATE ===')
             }
         } catch (error) {
             console.error('Error fetching page data:', error)
@@ -300,6 +309,7 @@ const ChildrenMenuDisplay = () => {
                     pageData={pageData}
                     onNavigateToChildren={handleNavigateToChildren}
                     onNavigateToGrandchild={handleNavigateToGrandchild}
+                    pageId={pageId}
                 />
             {/* </div> */}
         </div>
