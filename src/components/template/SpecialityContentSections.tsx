@@ -1027,6 +1027,19 @@ console.log("overviewSection",overviewSection);
             const contentBlocks: any[] = []
             const changedObjects: string[] = []
 
+            // Update title block if header text changed
+            const servicesTitleBlock = servicesSectionData.content_blocks?.find((block: any) => 
+                block.block_type === 'text' && block.title
+            )
+            if (servicesTitleBlock && servicesFacilitiesSection.headerText !== servicesTitleBlock.title) {
+                contentBlocks.push({
+                    id: servicesTitleBlock.id,
+                    block_type: servicesTitleBlock.block_type,
+                    title: servicesFacilitiesSection.headerText
+                })
+                changedObjects.push('Services & Facilities Header Text')
+            }
+
             // Update services data block if services changed
             const servicesDataBlock = servicesSectionData.content_blocks?.find((block: any) => 
                 block.facilitySpecialties && block.facilitySpecialties.length > 0
