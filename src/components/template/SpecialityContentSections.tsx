@@ -7,6 +7,7 @@ import { Field, Form, Formik } from 'formik'
 import * as Yup from 'yup'
 import { ChildrenMenuItem, ChildrenMenuData } from '@/store/slices/base/commonSlice'
 import { useUploadFileMutation } from '@/store/slices/fileUpload/fileUploadApiSlice'
+import { useUpdatePageSectionMutation } from '@/store/slices/pageSections/pageSectionsApiSlice'
 import toast from '@/components/ui/toast'
 import Notification from '@/components/ui/Notification'
 import { PageSectionsData } from '@/services/HomeService'
@@ -33,6 +34,7 @@ const SpecialityContentSections: React.FC<SpecialityContentSectionsProps> = ({
     pageId
 }) => {
     const [uploadFile, { isLoading: isUploading }] = useUploadFileMutation()
+    const [updatePageSection, { isLoading: isUpdating }] = useUpdatePageSectionMutation()
     console.log("activeTab",pageId);
     // Get the current active tab's data
     const getCurrentTabData = () => {
@@ -223,8 +225,10 @@ console.log("pageDataaaaaaa",pageData);
         buttonLink: 'https://www.somepagelink.com',
         heroImage: null as File | null,
         heroImageFileName: '',
+        heroImageMediaFileId: undefined as number | undefined,
         heroBgImage: null as File | null,
-        heroBgImageFileName: ''
+        heroBgImageFileName: '',
+        heroBgImageMediaFileId: undefined as number | undefined
     })
 console.log("heroSectionddd",heroSection);
 
@@ -238,7 +242,8 @@ console.log("heroSectionddd",heroSection);
         headerText: 'Overview',
         overview: '',
         image: null as File | null,
-        imageFileName: 'In affiliation.jpeg'
+        imageFileName: 'In affiliation.jpeg',
+        imageMediaFileId: undefined as number | undefined
     })
 
     const [coursesSection, setCoursesSection] = useState({
@@ -407,10 +412,131 @@ console.log("heroSectionddd",heroSection);
 
 
     // Save handlers for each section
-    const handleSaveHeroSection = () => {
-        console.log('Saving hero section:', heroSection)
-        // Here you would typically make an API call to save the data
-        alert('Hero section saved successfully!')
+    const handleSaveHeroSection = async () => {
+        if (!pageId) {
+            toast.push(
+                <Notification type="danger" duration={2500} title="Error">
+                    Page ID is required to save hero section
+                </Notification>,
+                { placement: 'top-end' }
+            )
+            return
+        }
+
+        try {
+            // Get current page data to find hero section
+            const currentPageData = pageData?.[pageId]?.data
+            if (!currentPageData || !Array.isArray(currentPageData)) {
+                throw new Error('No page data available')
+            }
+
+            const heroSectionData = currentPageData.find((section: any) => section.title === 'Hero')
+            if (!heroSectionData) {
+                throw new Error('Hero section not found')
+            }
+
+            const contentBlocks: any[] = []
+            const changedObjects: string[] = []
+
+            // Update text block if header text changed
+            const heroTextBlock = heroSectionData.content_blocks?.find((block: any) => 
+                block.block_type === 'text' && block.title
+            )
+            if (heroTextBlock && heroSection.headerText !== heroTextBlock.title) {
+                contentBlocks.push({
+                    id: heroTextBlock.id,
+                    block_type: heroTextBlock.block_type,
+                    title: heroSection.headerText
+                })
+                changedObjects.push('Hero Header Text')
+            }
+
+            // Update hero image if changed
+            const heroImageBlock = heroSectionData.content_blocks?.find((block: any) => 
+                block.block_type === 'image' && block.media_files && block.media_files.length > 0
+            )
+            if (heroImageBlock && heroSection.heroImageMediaFileId) {
+                contentBlocks.push({
+                    id: heroImageBlock.id,
+                    block_type: heroImageBlock.block_type,
+                    media_files: [{
+                        id: heroImageBlock.media_files[0].id,
+                        content_block_id: heroImageBlock.id,
+                        media_file_id: heroSection.heroImageMediaFileId,
+                        media_type: "primary",
+                        display_order: 1
+                    }]
+                })
+                changedObjects.push('Hero Image')
+            }
+
+            // Update hero background image if changed
+            const heroBgImageBlock = heroSectionData.content_blocks?.find((block: any) => 
+                block.block_type === 'custom' && block.media_files && block.media_files.length > 0
+            )
+            if (heroBgImageBlock && heroSection.heroBgImageMediaFileId) {
+                contentBlocks.push({
+                    id: heroBgImageBlock.id,
+                    block_type: heroBgImageBlock.block_type,
+                    media_files: [{
+                        id: heroBgImageBlock.media_files[0].id,
+                        content_block_id: heroBgImageBlock.id,
+                        media_file_id: heroSection.heroBgImageMediaFileId,
+                        media_type: "primary",
+                        display_order: 1
+                    }]
+                })
+                changedObjects.push('Hero Background Image')
+            }
+
+            // Only proceed if there are changes
+            if (contentBlocks.length === 0) {
+                toast.push(
+                    <Notification type="info" duration={2500} title="No Changes">
+                        No changes detected to save.
+                    </Notification>,
+                    { placement: 'top-end' }
+                )
+                return
+            }
+
+            // Build the update data structure
+            const updateData = {
+                id: heroSectionData.id,
+                name: heroSectionData.name,
+                title: heroSectionData.title,
+                content_blocks: contentBlocks
+            }
+
+            console.log('Final payload being sent:', updateData)
+            console.log('Only these objects are being updated:', changedObjects)
+
+            // Make the actual API call
+            const result = await updatePageSection({ 
+                pageId: pageId.toString(), 
+                sectionId: heroSectionData.id, 
+                updateData 
+            }).unwrap()
+
+            if (result.success) {
+                toast.push(
+                    <Notification type="success" duration={2500} title="Success">
+                        Hero section updated successfully
+                    </Notification>,
+                    { placement: 'top-end' }
+                )
+            } else {
+                throw new Error(result.message || 'Failed to update hero section')
+            }
+        } catch (error: any) {
+            const errorMessage = error?.data?.message || error?.message || 'Failed to update hero section'
+            toast.push(
+                <Notification type="danger" duration={3000} title="Error">
+                    {errorMessage}
+                </Notification>,
+                { placement: 'top-end' }
+            )
+        }
     }
 
     const handleSaveAudioSection = () => {
@@ -439,13 +565,15 @@ console.log("heroSectionddd",heroSection);
                     setOverviewSection({
                         ...overviewSection,
                         image: file,
-                        imageFileName: responseData.savedMedia.original_filename
+                        imageFileName: responseData.savedMedia.original_filename,
+                        imageMediaFileId: responseData.savedMedia.id
                     })
                 } else if (responseData?.filePath) {
                     setOverviewSection({
                         ...overviewSection,
                         image: file,
-                        imageFileName: responseData.filePath
+                        imageFileName: responseData.filePath,
+                        imageMediaFileId: responseData.savedMedia?.id
                     })
                 }
             } else {
@@ -483,13 +611,15 @@ console.log("heroSectionddd",heroSection);
                     setHeroSection({
                         ...heroSection,
                         heroImage: file,
-                        heroImageFileName: responseData.savedMedia.original_filename
+                        heroImageFileName: responseData.savedMedia.original_filename,
+                        heroImageMediaFileId: responseData.savedMedia.id
                     })
                 } else if (responseData?.filePath) {
                     setHeroSection({
                         ...heroSection,
                         heroImage: file,
-                        heroImageFileName: responseData.filePath
+                        heroImageFileName: responseData.filePath,
+                        heroImageMediaFileId: responseData.savedMedia?.id
                     })
                 }
             } else {
@@ -527,13 +657,15 @@ console.log("heroSectionddd",heroSection);
                     setHeroSection({
                         ...heroSection,
                         heroBgImage: file,
-                        heroBgImageFileName: responseData.savedMedia.original_filename
+                        heroBgImageFileName: responseData.savedMedia.original_filename,
+                        heroBgImageMediaFileId: responseData.savedMedia.id
                     })
                 } else if (responseData?.filePath) {
                     setHeroSection({
                         ...heroSection,
                         heroBgImage: file,
-                        heroBgImageFileName: responseData.filePath
+                        heroBgImageFileName: responseData.filePath,
+                        heroBgImageMediaFileId: responseData.savedMedia?.id
                     })
                 }
             } else {
@@ -550,9 +682,110 @@ console.log("heroSectionddd",heroSection);
         }
     }
 
-    const handleSaveOverviewSection = () => {
-        console.log('Saving overview section:', overviewSection)
-        alert('Overview section saved successfully!')
+    const handleSaveOverviewSection = async () => {
+        if (!pageId) {
+            toast.push(
+                <Notification type="danger" duration={2500} title="Error">
+                    Page ID is required to save overview section
+                </Notification>,
+                { placement: 'top-end' }
+            )
+            return
+        }
+
+        try {
+            // Get current page data to find overview section
+            const currentPageData = pageData?.[pageId]?.data
+            if (!currentPageData || !Array.isArray(currentPageData)) {
+                throw new Error('No page data available')
+            }
+
+            const overviewSectionData = currentPageData.find((section: any) => section.name === 'overview')
+            if (!overviewSectionData) {
+                throw new Error('Overview section not found')
+            }
+
+            const contentBlocks: any[] = []
+            const changedObjects: string[] = []
+
+            // Update content block if overview text changed
+            const overviewContentBlock = overviewSectionData.content_blocks?.find((block: any) => block.content)
+            if (overviewContentBlock && overviewSection.overview !== overviewContentBlock.content) {
+                contentBlocks.push({
+                    id: overviewContentBlock.id,
+                    block_type: overviewContentBlock.block_type,
+                    content: overviewSection.overview
+                })
+                changedObjects.push('Overview Content')
+            }
+
+            // Update image block if image changed
+            const overviewImageBlock = overviewSectionData.content_blocks?.find((block: any) => 
+                block.block_type === 'image' && block.media_files && block.media_files.length > 0
+            )
+            if (overviewImageBlock && overviewSection.imageMediaFileId) {
+                contentBlocks.push({
+                    id: overviewImageBlock.id,
+                    block_type: overviewImageBlock.block_type,
+                    media_files: [{
+                        id: overviewImageBlock.media_files[0].id,
+                        content_block_id: overviewImageBlock.id,
+                        media_file_id: overviewSection.imageMediaFileId,
+                        media_type: "primary",
+                        display_order: 1
+                    }]
+                })
+                changedObjects.push('Overview Image')
+            }
+
+            // Only proceed if there are changes
+            if (contentBlocks.length === 0) {
+                toast.push(
+                    <Notification type="info" duration={2500} title="No Changes">
+                        No changes detected to save.
+                    </Notification>,
+                    { placement: 'top-end' }
+                )
+                return
+            }
+
+            // Build the update data structure
+            const updateData = {
+                id: overviewSectionData.id,
+                name: overviewSectionData.name,
+                title: overviewSectionData.title,
+                content_blocks: contentBlocks
+            }
+
+            console.log('Final payload being sent:', updateData)
+            console.log('Only these objects are being updated:', changedObjects)
+
+            // Make the actual API call
+            const result = await updatePageSection({ 
+                pageId: pageId.toString(), 
+                sectionId: overviewSectionData.id, 
+                updateData 
+            }).unwrap()
+
+            if (result.success) {
+                toast.push(
+                    <Notification type="success" duration={2500} title="Success">
+                        Overview section updated successfully
+                    </Notification>,
+                    { placement: 'top-end' }
+                )
+            } else {
+                throw new Error(result.message || 'Failed to update overview section')
+            }
+        } catch (error: any) {
+            const errorMessage = error?.data?.message || error?.message || 'Failed to update overview section'
+            toast.push(
+                <Notification type="danger" duration={3000} title="Error">
+                    {errorMessage}
+                </Notification>,
+                { placement: 'top-end' }
+            )
+        }
     }
 
     const handleCourseTextChange = (courseId: number, newText: string) => {
@@ -586,9 +819,101 @@ console.log("heroSectionddd",heroSection);
         })
     }
 
-    const handleSaveCoursesSection = () => {
-        console.log('Saving courses section:', coursesSection)
-        alert('Courses section saved successfully!')
+    const handleSaveCoursesSection = async () => {
+        if (!pageId) {
+            toast.push(
+                <Notification type="danger" duration={2500} title="Error">
+                    Page ID is required to save courses section
+                </Notification>,
+                { placement: 'top-end' }
+            )
+            return
+        }
+
+        try {
+            // Get current page data to find specialities section
+            const currentPageData = pageData?.[pageId]?.data
+            if (!currentPageData || !Array.isArray(currentPageData)) {
+                throw new Error('No page data available')
+            }
+
+            const specialitiesSectionData = currentPageData.find((section: any) => section.name === 'our specialities')
+            if (!specialitiesSectionData) {
+                throw new Error('Our Specialities section not found')
+            }
+
+            const contentBlocks: any[] = []
+            const changedObjects: string[] = []
+
+            // Update specialities data block if courses changed
+            const specialitiesDataBlock = specialitiesSectionData.content_blocks?.find((block: any) => 
+                block.specialties && block.specialties.length > 0
+            )
+            
+            if (specialitiesDataBlock) {
+                // Convert courses to specialties format
+                const specialties = coursesSection.courses.map(course => ({
+                    id: course.id,
+                    name: course.text,
+                    link: course.link
+                }))
+
+                contentBlocks.push({
+                    id: specialitiesDataBlock.id,
+                    block_type: specialitiesDataBlock.block_type,
+                    specialties: specialties
+                })
+                changedObjects.push('Our Specialities')
+            }
+
+            // Only proceed if there are changes
+            if (contentBlocks.length === 0) {
+                toast.push(
+                    <Notification type="info" duration={2500} title="No Changes">
+                        No changes detected to save.
+                    </Notification>,
+                    { placement: 'top-end' }
+                )
+                return
+            }
+
+            // Build the update data structure
+            const updateData = {
+                id: specialitiesSectionData.id,
+                name: specialitiesSectionData.name,
+                title: specialitiesSectionData.title,
+                content_blocks: contentBlocks
+            }
+
+            console.log('Final payload being sent:', updateData)
+            console.log('Only these objects are being updated:', changedObjects)
+
+            // Make the actual API call
+            const result = await updatePageSection({ 
+                pageId: pageId.toString(), 
+                sectionId: specialitiesSectionData.id, 
+                updateData 
+            }).unwrap()
+
+            if (result.success) {
+                toast.push(
+                    <Notification type="success" duration={2500} title="Success">
+                        Our Specialities section updated successfully
+                    </Notification>,
+                    { placement: 'top-end' }
+                )
+            } else {
+                throw new Error(result.message || 'Failed to update our specialities section')
+            }
+        } catch (error: any) {
+            const errorMessage = error?.data?.message || error?.message || 'Failed to update our specialities section'
+            toast.push(
+                <Notification type="danger" duration={3000} title="Error">
+                    {errorMessage}
+                </Notification>,
+                { placement: 'top-end' }
+            )
+        }
     }
 
     const handleSaveExpertsSection = () => {
@@ -624,9 +949,102 @@ console.log("heroSectionddd",heroSection);
         })
     }
 
-    const handleSaveServicesFacilitiesSection = () => {
-        console.log('Saving services & facilities section:', servicesFacilitiesSection)
-        alert('Services & Facilities section saved successfully!')
+    const handleSaveServicesFacilitiesSection = async () => {
+        if (!pageId) {
+            toast.push(
+                <Notification type="danger" duration={2500} title="Error">
+                    Page ID is required to save services & facilities section
+                </Notification>,
+                { placement: 'top-end' }
+            )
+            return
+        }
+
+        try {
+            // Get current page data to find services section
+            const currentPageData = pageData?.[pageId]?.data
+            if (!currentPageData || !Array.isArray(currentPageData)) {
+                throw new Error('No page data available')
+            }
+
+            const servicesSectionData = currentPageData.find((section: any) => section.name === 'service & facilities')
+            if (!servicesSectionData) {
+                throw new Error('Services & Facilities section not found')
+            }
+
+            const contentBlocks: any[] = []
+            const changedObjects: string[] = []
+
+            // Update services data block if services changed
+            const servicesDataBlock = servicesSectionData.content_blocks?.find((block: any) => 
+                block.facilitySpecialties && block.facilitySpecialties.length > 0
+            )
+            
+            if (servicesDataBlock) {
+                // Convert services to facility specialties format
+                const facilitySpecialties = servicesFacilitiesSection.services.map(service => ({
+                    id: service.id,
+                    facility: {
+                        name: service.text
+                    }
+                }))
+
+                contentBlocks.push({
+                    id: servicesDataBlock.id,
+                    block_type: servicesDataBlock.block_type,
+                    facilitySpecialties: facilitySpecialties
+                })
+                changedObjects.push('Services & Facilities')
+            }
+
+            // Only proceed if there are changes
+            if (contentBlocks.length === 0) {
+                toast.push(
+                    <Notification type="info" duration={2500} title="No Changes">
+                        No changes detected to save.
+                    </Notification>,
+                    { placement: 'top-end' }
+                )
+                return
+            }
+
+            // Build the update data structure
+            const updateData = {
+                id: servicesSectionData.id,
+                name: servicesSectionData.name,
+                title: servicesSectionData.title,
+                content_blocks: contentBlocks
+            }
+
+            console.log('Final payload being sent:', updateData)
+            console.log('Only these objects are being updated:', changedObjects)
+
+            // Make the actual API call
+            const result = await updatePageSection({ 
+                pageId: pageId.toString(), 
+                sectionId: servicesSectionData.id, 
+                updateData 
+            }).unwrap()
+
+            if (result.success) {
+                toast.push(
+                    <Notification type="success" duration={2500} title="Success">
+                        Services & Facilities section updated successfully
+                    </Notification>,
+                    { placement: 'top-end' }
+                )
+            } else {
+                throw new Error(result.message || 'Failed to update services & facilities section')
+            }
+        } catch (error: any) {
+            const errorMessage = error?.data?.message || error?.message || 'Failed to update services & facilities section'
+            toast.push(
+                <Notification type="danger" duration={3000} title="Error">
+                    {errorMessage}
+                </Notification>,
+                { placement: 'top-end' }
+            )
+        }
     }
 
     const handleSaveEnquiryFormSection = () => {
@@ -872,9 +1290,10 @@ console.log("heroSectionddd",heroSection);
                 <div className="flex justify-end">
                     <Button
                         onClick={handleSaveHeroSection}
+                        loading={isUpdating}
                         className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white px-4 py-2 font-medium transition-all duration-200"
                     >
-                        Save
+                        {isUpdating ? 'Saving...' : 'Save'}
                     </Button>
                 </div>
             </div>
@@ -935,9 +1354,10 @@ console.log("heroSectionddd",heroSection);
                 <div className="flex justify-end">
                     <Button
                         onClick={handleSaveOverviewSection}
+                        loading={isUpdating}
                         className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white px-4 py-2 font-medium transition-all duration-200"
                     >
-                        Save
+                        {isUpdating ? 'Saving...' : 'Save'}
                     </Button>
                 </div>
             </div>
@@ -1000,9 +1420,10 @@ console.log("heroSectionddd",heroSection);
                 <div className="flex justify-end">
                     <Button
                         onClick={handleSaveCoursesSection}
+                        loading={isUpdating}
                         className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white px-4 py-2 font-medium transition-all duration-200"
                     >
-                        Save
+                        {isUpdating ? 'Saving...' : 'Save'}
                     </Button>
                 </div>
             </div>
@@ -1063,9 +1484,10 @@ console.log("heroSectionddd",heroSection);
                 <div className="flex justify-end">
                     <Button
                         onClick={handleSaveServicesFacilitiesSection}
+                        loading={isUpdating}
                         className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white px-4 py-2 font-medium transition-all duration-200"
                     >
-                        Save
+                        {isUpdating ? 'Saving...' : 'Save'}
                     </Button>
                 </div>
             </div>

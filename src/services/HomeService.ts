@@ -279,3 +279,20 @@ export async function apiGetPageSections(pageId: string) {
         throw error
     }
 }
+
+// API function to update page section data
+export async function apiUpdatePageSection(pageId: string, sectionId: number, updateData: any) {
+    console.log(`Making API call to /home/sections/${pageId}/section/${sectionId}`)
+    try {
+        const response = await ApiService.fetchData<UpdateHomeResponse>({
+            url: `/home/sections/${pageId}/section/${sectionId}`,
+            method: 'put',
+            data: { updateData },
+        })
+        console.log('Page Section Update API Response received:', response)
+        return response
+    } catch (error) {
+        console.error('Page Section Update API Error:', error)
+        throw error
+    }
+}
