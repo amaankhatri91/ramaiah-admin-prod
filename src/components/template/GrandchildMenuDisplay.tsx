@@ -446,11 +446,11 @@ const GrandchildMenuDisplay = () => {
             const contentBlocks: any[] = []
             const changedObjects: string[] = []
 
-            // Update text block if header text changed
+            // Update text block with header text (always update)
             const heroTextBlock = heroSectionData.content_blocks?.find((block: any) => 
                 block.block_type === 'text' && block.title
             )
-            if (heroTextBlock && heroSection.headerText !== heroTextBlock.title) {
+            if (heroTextBlock) {
                 contentBlocks.push({
                     id: heroTextBlock.id,
                     block_type: heroTextBlock.block_type,
@@ -708,11 +708,11 @@ const GrandchildMenuDisplay = () => {
             const contentBlocks: any[] = []
             const changedObjects: string[] = []
 
-            // Update title block if header text changed
+            // Update title block with header text (always update)
             const overviewTitleBlock = overviewSectionData.content_blocks?.find((block: any) => 
                 block.block_type === 'text' && block.title
             )
-            if (overviewTitleBlock && overviewSection.headerText !== overviewTitleBlock.title) {
+            if (overviewTitleBlock) {
                 contentBlocks.push({
                     id: overviewTitleBlock.id,
                     block_type: overviewTitleBlock.block_type,
@@ -846,11 +846,11 @@ const GrandchildMenuDisplay = () => {
             const contentBlocks: any[] = []
             const changedObjects: string[] = []
 
-            // Update title block if header text changed
+            // Update title block with header text (always update)
             const specialitiesTitleBlock = specialitiesSectionData.content_blocks?.find((block: any) => 
                 block.block_type === 'text' && block.title
             )
-            if (specialitiesTitleBlock && coursesSection.headerText !== specialitiesTitleBlock.title) {
+            if (specialitiesTitleBlock) {
                 contentBlocks.push({
                     id: specialitiesTitleBlock.id,
                     block_type: specialitiesTitleBlock.block_type,
@@ -977,11 +977,11 @@ const GrandchildMenuDisplay = () => {
             const contentBlocks: any[] = []
             const changedObjects: string[] = []
 
-            // Update title block if header text changed
+            // Update title block with header text (always update)
             const servicesTitleBlock = servicesSectionData.content_blocks?.find((block: any) => 
                 block.block_type === 'text' && block.title
             )
-            if (servicesTitleBlock && servicesFacilitiesSection.headerText !== servicesTitleBlock.title) {
+            if (servicesTitleBlock) {
                 contentBlocks.push({
                     id: servicesTitleBlock.id,
                     block_type: servicesTitleBlock.block_type,
