@@ -953,10 +953,10 @@ const GrandchildMenuDisplay = () => {
             </div>
 
             {/* Enquiry Form Section */}
-            <div className="mb-6 p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+            {/* <div className="mb-6 p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
                 <h3 className="text-[#495057] font-inter text-[16px] font-semibold leading-normal mb-6">Enquiry Form Section</h3>
 
-                {/* Full Name */}
+               
                 <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
                     <input
@@ -968,7 +968,7 @@ const GrandchildMenuDisplay = () => {
                     />
                 </div>
 
-                {/* Phone Number */}
+                
                 <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
                     <input
@@ -980,7 +980,7 @@ const GrandchildMenuDisplay = () => {
                     />
                 </div>
 
-                {/* Email */}
+
                 <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                     <input
@@ -992,7 +992,7 @@ const GrandchildMenuDisplay = () => {
                     />
                 </div>
 
-                {/* Message */}
+          
                 <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
                     <textarea
@@ -1012,10 +1012,10 @@ const GrandchildMenuDisplay = () => {
                         Save
                     </Button>
                 </div>
-            </div>
+            </div> */}
 
             {/* Our Experts Section */}
-            <div className="mb-6 p-4 border bg-white border-gray-200 rounded-lg">
+            {/* <div className="mb-6 p-4 border bg-white border-gray-200 rounded-lg">
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-gray-700">Our Experts Section</h3>
                     <button
@@ -1055,7 +1055,7 @@ const GrandchildMenuDisplay = () => {
                         Save
                     </button>
                 </div>
-            </div>
+            </div> */}
 
             {/* Why Choose Us Section */}
             <Card className="bg-white rounded-xl">
