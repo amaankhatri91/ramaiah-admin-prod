@@ -39,6 +39,11 @@ const GrandchildMenuDisplay = () => {
         buttonText: 'Book Appointment',
         buttonLink: 'https://www.somepagelink.com',
         heroImage: null as File | null,
+        heroImageFileName: '',
+        heroImageMediaFileId: undefined as number | undefined,
+        heroBgImage: null as File | null,
+        heroBgImageFileName: '',
+        heroBgImageMediaFileId: undefined as number | undefined,
         heroVideo: 'In affiliation.mp4'
     })
 
@@ -105,6 +110,10 @@ const GrandchildMenuDisplay = () => {
 
     const [uploadingBoxId, setUploadingBoxId] = useState<string | null>(null)
     const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({})
+    
+    // Separate loading states for each upload button
+    const [isHeroImageUploading, setIsHeroImageUploading] = useState(false)
+    const [isHeroBgImageUploading, setIsHeroBgImageUploading] = useState(false)
 
     // Validation schema for Why Choose Us Section
     const whyChooseUsValidationSchema = Yup.object().shape({
@@ -271,6 +280,104 @@ const GrandchildMenuDisplay = () => {
                 </Notification>,
                 { placement: 'top-end' }
             )
+        }
+    }
+
+    const handleHeroImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0]
+        if (!file) return
+
+        setIsHeroImageUploading(true)
+        try {
+            const result = await uploadFile({ file }).unwrap()
+
+            if (result.status === 1) {
+                toast.push(
+                    <Notification type="success" duration={2500} title="Upload Success">
+                        {result.message}
+                    </Notification>,
+                    { placement: 'top-end' }
+                )
+
+                // Update the hero section with the uploaded file info
+                const responseData = result.data as any
+                if (responseData?.savedMedia?.original_filename) {
+                    setHeroSection({
+                        ...heroSection,
+                        heroImage: file,
+                        heroImageFileName: responseData.savedMedia.original_filename,
+                        heroImageMediaFileId: responseData.savedMedia.id
+                    })
+                } else if (responseData?.filePath) {
+                    setHeroSection({
+                        ...heroSection,
+                        heroImage: file,
+                        heroImageFileName: responseData.filePath,
+                        heroImageMediaFileId: responseData.savedMedia?.id
+                    })
+                }
+            } else {
+                throw new Error(result.message)
+            }
+        } catch (error: any) {
+            const errorMessage = error?.data?.message || error?.message || 'File upload failed'
+            toast.push(
+                <Notification type="danger" duration={2500} title="Upload Failed">
+                    {errorMessage}
+                </Notification>,
+                { placement: 'top-end' }
+            )
+        } finally {
+            setIsHeroImageUploading(false)
+        }
+    }
+
+    const handleHeroBgImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0]
+        if (!file) return
+
+        setIsHeroBgImageUploading(true)
+        try {
+            const result = await uploadFile({ file }).unwrap()
+
+            if (result.status === 1) {
+                toast.push(
+                    <Notification type="success" duration={2500} title="Upload Success">
+                        {result.message}
+                    </Notification>,
+                    { placement: 'top-end' }
+                )
+
+                // Update the hero section with the uploaded background image file info
+                const responseData = result.data as any
+                if (responseData?.savedMedia?.original_filename) {
+                    setHeroSection({
+                        ...heroSection,
+                        heroBgImage: file,
+                        heroBgImageFileName: responseData.savedMedia.original_filename,
+                        heroBgImageMediaFileId: responseData.savedMedia.id
+                    })
+                } else if (responseData?.filePath) {
+                    setHeroSection({
+                        ...heroSection,
+                        heroBgImage: file,
+                        heroBgImageFileName: responseData.filePath,
+                        heroBgImageMediaFileId: responseData.savedMedia?.id
+                    })
+                }
+            } else {
+                throw new Error(result.message)
+            }
+        } catch (error: any) {
+            const errorMessage = error?.data?.message || error?.message || 'File upload failed'
+            toast.push(
+                <Notification type="danger" duration={2500} title="Upload Failed">
+                    {errorMessage}
+                </Notification>,
+                { placement: 'top-end' }
+            )
+        } finally {
+            setIsHeroBgImageUploading(false)
         }
     }
 
@@ -590,42 +697,57 @@ const GrandchildMenuDisplay = () => {
                         type="text"
                         value={heroSection.headerText}
                         onChange={(e) => setHeroSection({ ...heroSection, headerText: e.target.value })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-[24px]"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-[24px]  "
                     />
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Button Text</label>
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Upload image</label>
+                    <div className="flex items-center gap-3">
                         <input
                             type="text"
-                            value={heroSection.buttonText}
-                            onChange={(e) => setHeroSection({ ...heroSection, buttonText: e.target.value })}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-[24px]"
+                            value={heroSection.heroImageFileName}
+                            readOnly
+                            className="flex-1 px-4 py-3 border border-gray-300 rounded-[24px] bg-white text-gray-700"
                         />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Button Link</label>
                         <input
-                            type="text"
-                            value={heroSection.buttonLink}
-                            onChange={(e) => setHeroSection({ ...heroSection, buttonLink: e.target.value })}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-[24px]"
+                            type="file"
+                            accept="image/*,video/*"
+                            onChange={handleHeroImageUpload}
+                            className="hidden"
+                            id="hero-image-upload"
+                            disabled={isHeroImageUploading}
                         />
+                        <label
+                            htmlFor="hero-image-upload"
+                            className={`px-4 py-3 hover:bg-gray-100 text-gray-700 rounded-[24px] bg-gray-200 transition-colors cursor-pointer ${isHeroImageUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            {isHeroImageUploading ? 'Uploading...' : 'Upload File'}
+                        </label>
                     </div>
                 </div>
                 <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Hero Section Video</label>
-                    <div className="flex items-center gap-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Upload Bg image</label>
+                    <div className="flex items-center gap-3">
                         <input
                             type="text"
-                            value={heroSection.heroVideo}
-                            onChange={(e) => setHeroSection({ ...heroSection, heroVideo: e.target.value })}
-                            className="flex-1 px-4 py-3 border border-gray-300 rounded-[24px]"
+                            value={heroSection.heroBgImageFileName}
+                            readOnly
+                            className="flex-1 px-4 py-3 border border-gray-300 rounded-[24px] bg-white text-gray-700"
                         />
-                        <button className="px-4 py-3 hover:bg-gray-100 text-gray-700 rounded-[24px] bg-gray-200 transition-colors">
-                            Upload File
-                        </button>
+                        <input
+                            type="file"
+                            accept="image/*,video/*"
+                            onChange={handleHeroBgImageUpload}
+                            className="hidden"
+                            id="hero-bg-image-upload"
+                            disabled={isHeroBgImageUploading}
+                        />
+                        <label
+                            htmlFor="hero-bg-image-upload"
+                            className={`px-4 py-3 hover:bg-gray-100 text-gray-700 rounded-[24px] bg-gray-200 transition-colors cursor-pointer ${isHeroBgImageUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            {isHeroBgImageUploading ? 'Uploading...' : 'Upload File'}
+                        </label>
                     </div>
                 </div>
 
