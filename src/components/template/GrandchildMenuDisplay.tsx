@@ -11,6 +11,7 @@ import * as Yup from 'yup'
 import { useUploadFileMutation } from '@/store/slices/fileUpload/fileUploadApiSlice'
 import toast from '@/components/ui/toast'
 import Notification from '@/components/ui/Notification'
+import { apiGetPageSections } from '@/services/HomeService'
 
 const GrandchildMenuDisplay = () => {
     const { menuId } = useParams<{ menuId: string }>()
@@ -114,6 +115,10 @@ const GrandchildMenuDisplay = () => {
     // Separate loading states for each upload button
     const [isHeroImageUploading, setIsHeroImageUploading] = useState(false)
     const [isHeroBgImageUploading, setIsHeroBgImageUploading] = useState(false)
+    
+    // State for API response data
+    const [apiResponseData, setApiResponseData] = useState<any>(null)
+    const [showApiLog, setShowApiLog] = useState<boolean>(false)
 
     // Validation schema for Why Choose Us Section
     const whyChooseUsValidationSchema = Yup.object().shape({
@@ -178,7 +183,57 @@ const GrandchildMenuDisplay = () => {
         setInnerPages(prev => prev.filter(page => page.id !== id))
     }
 
-    const handleEditInnerPage = (id: number) => {
+    const handleEditInnerPage = async (id: number) => {
+        try {
+            // First, get the page_id from the inner pages data
+            let pageId = id // Default to the menu item ID
+            
+            const innerPage = innerPages.find(page => page.id === id)
+            if (innerPage && innerPage.page_id) {
+                pageId = innerPage.page_id
+                console.log(`Found page_id: ${pageId} for menu item ID: ${id}`)
+            } else {
+                console.log(`No page_id found for menu item ID: ${id}, using menu item ID as fallback`)
+            }
+            
+            // Call the API to get page sections data using the correct page_id
+            console.log(`Calling API /home/sections/${pageId}`)
+            const response = await apiGetPageSections(pageId.toString())
+            
+            // Store the response data
+            setApiResponseData(response)
+            setShowApiLog(true)
+            
+            // Log the response data
+            console.log('=== API RESPONSE DATA ===')
+            console.log('Menu Item ID:', id)
+            console.log('Page ID used:', pageId)
+            console.log('Full Response:', response)
+            console.log('Response Data:', response.data)
+            console.log('========================')
+            
+            // Show success notification
+            toast.push(
+                <Notification type="success" duration={3000} title="API Call Successful">
+                    Successfully fetched page sections data for page ID: {pageId}
+                </Notification>,
+                { placement: 'top-end' }
+            )
+            
+        } catch (error: any) {
+            console.error('Error fetching page sections:', error)
+            
+            // Show error notification
+            const errorMessage = error?.data?.message || error?.message || 'Failed to fetch page sections data'
+            toast.push(
+                <Notification type="danger" duration={3000} title="API Call Failed">
+                    {errorMessage}
+                </Notification>,
+                { placement: 'top-end' }
+            )
+        }
+        
+        // Also handle the original navigation logic
         // Find the inner page to check if it has children
         const innerPage = innerPages.find(page => page.id === id)
         if (innerPage) {
@@ -683,6 +738,34 @@ const GrandchildMenuDisplay = () => {
                                 </div>
                             </div>
                         ))}
+                    </div>
+                </div>
+            )}
+
+            {/* API Response Log Section */}
+            {showApiLog && apiResponseData && (
+                <div className="bg-white rounded-[20px] shadow-sm border border-gray-200 p-6 mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-[#495057] font-inter text-[16px] font-semibold leading-normal">API Response Log</h2>
+                        <button
+                            onClick={() => setShowApiLog(false)}
+                            className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                        >
+                            <HiXMark className="w-5 h-5" />
+                        </button>
+                    </div>
+                    
+                    <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
+                        <pre className="text-sm text-gray-700 whitespace-pre-wrap">
+                            {JSON.stringify(apiResponseData, null, 2)}
+                        </pre>
+                    </div>
+                    
+                    <div className="mt-4 text-sm text-gray-500">
+                        <p><strong>API Endpoint:</strong> /home/sections/{apiResponseData?.data?.id || 'N/A'}</p>
+                        <p><strong>Status:</strong> {apiResponseData?.status || 'N/A'}</p>
+                        <p><strong>Message:</strong> {apiResponseData?.message || 'N/A'}</p>
+                        <p><strong>Page ID Used:</strong> {apiResponseData?.data?.id || 'N/A'}</p>
                     </div>
                 </div>
             )}
