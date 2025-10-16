@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { useAppSelector, useAppDispatch } from '@/store'
 import { HiPlus, HiPencil, HiXMark } from 'react-icons/hi2'
 import FileUpload from '@/components/ui/FileUpload'
 import { Button, Card, Input } from '@/components/ui'
 import { FormItem, FormContainer } from '@/components/ui/Form'
 import { Field, Form, Formik } from 'formik'
 import * as Yup from 'yup'
-import { ChildrenMenuItem, ChildrenMenuData } from '@/store/slices/base/commonSlice'
+import { ChildrenMenuItem, ChildrenMenuData, setOverviewSection, updateOverviewSection, OverviewSectionState } from '@/store/slices/base/commonSlice'
 import { useUploadFileMutation } from '@/store/slices/fileUpload/fileUploadApiSlice'
 import { useUpdatePageSectionMutation } from '@/store/slices/pageSections/pageSectionsApiSlice'
 import toast from '@/components/ui/toast'
@@ -34,6 +35,8 @@ const SpecialityContentSections: React.FC<SpecialityContentSectionsProps> = ({
     onNavigateToGrandchild,
     pageId
 }) => {
+    const dispatch = useAppDispatch()
+    const overviewSection = useAppSelector((state) => state.base.common.overviewSection)
     const [uploadFile, { isLoading: isUploading }] = useUploadFileMutation()
     const [updatePageSection, { isLoading: isUpdating }] = useUpdatePageSectionMutation()
     
@@ -113,7 +116,8 @@ console.log("pageDataaaaaaa",pageData);
     // Update Hero Section content when active tab changes
     console.log("currentTabData",currentTabData);
     useEffect(() => {
-        if (pageData && activeTab) {
+        try {
+            if (pageData && activeTab) {
             // const currentPageData = pageData[activeTab]
             console.log("pageDatassssss",pageData[pageId || '']?.data);
             // console.log("currentPageDatassss",currentPageData);g
@@ -166,13 +170,15 @@ console.log("pageDataaaaaaa",pageData);
                     )
                     console.log("overviewContentBlock", overviewContentBlock);
                     
-                    if (overviewContentBlock) {
-                        setOverviewSection(prev => ({
-                            ...prev,
-                            headerText: overviewContenttitle.title,
-                            overview: overviewContentBlock.content,
-                            imageFileName: overviewImageBlock?.media_files?.[0]?.media_file?.original_filename || ''
-                        }))
+                    if (overviewContentBlock || overviewContenttitle) {
+                        const newOverviewSection: OverviewSectionState = {
+                            headerText: overviewContenttitle?.title || '',
+                            overview: overviewContentBlock?.content || '',
+                            image: null,
+                            imageFileName: overviewImageBlock?.media_files?.[0]?.media_file?.original_filename || '',
+                            imageMediaFileId: overviewImageBlock?.media_files?.[0]?.media_file?.id
+                        }
+                        dispatch(setOverviewSection(newOverviewSection))
                     }
                 }
             }
@@ -225,6 +231,9 @@ console.log("pageDataaaaaaa",pageData);
                     }
                 }
             }
+            }
+        } catch (error) {
+            console.error('Error updating form states with page data:', error)
         }
     }, [pageData, activeTab, currentTabData, pageId])
 
@@ -249,14 +258,6 @@ console.log("heroSectionddd",heroSection);
         audioFile: null as File | null
     })
 
-    const [overviewSection, setOverviewSection] = useState({
-        headerText: '',
-        overview: '',
-        image: null as File | null,
-        imageFileName: 'In affiliation.jpeg',
-        imageMediaFileId: undefined as number | undefined
-    })
-console.log("overviewSection",overviewSection);
 
     const [coursesSection, setCoursesSection] = useState({
         headerText: 'Our Specialities',
@@ -634,19 +635,17 @@ console.log("overviewSection",overviewSection);
                 // Update the overview section with the uploaded file info
                 const responseData = result.data as any
                 if (responseData?.savedMedia?.original_filename) {
-                    setOverviewSection({
-                        ...overviewSection,
+                    dispatch(updateOverviewSection({
                         image: file,
                         imageFileName: responseData.savedMedia.original_filename,
                         imageMediaFileId: responseData.savedMedia.id
-                    })
+                    }))
                 } else if (responseData?.filePath) {
-                    setOverviewSection({
-                        ...overviewSection,
+                    dispatch(updateOverviewSection({
                         image: file,
                         imageFileName: responseData.filePath,
                         imageMediaFileId: responseData.savedMedia?.id
-                    })
+                    }))
                 }
             } else {
                 throw new Error(result.message)
@@ -1460,7 +1459,7 @@ console.log("overviewSection",overviewSection);
                     <input
                         type="text"
                         value={overviewSection.headerText}
-                        onChange={(e) => setOverviewSection({ ...overviewSection, headerText: e.target.value })}
+                        onChange={(e) => dispatch(updateOverviewSection({ headerText: e.target.value }))}
                         className="w-full px-4 py-3 border border-gray-300 rounded-[24px]   bg-white"
                         placeholder="Enter header text..."
                     />
@@ -1471,7 +1470,7 @@ console.log("overviewSection",overviewSection);
                     <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
                     <RichTextEditor
                         value={overviewSection.overview}
-                        onChange={(value) => setOverviewSection({ ...overviewSection, overview: value })}
+                        onChange={(value) => dispatch(updateOverviewSection({ overview: value }))}
                         placeholder="Enter content here..."
                         theme="snow"
                         modules={{

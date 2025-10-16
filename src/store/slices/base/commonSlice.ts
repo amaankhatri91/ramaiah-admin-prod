@@ -47,6 +47,14 @@ export interface MenuPathItem {
     level: number
 }
 
+export interface OverviewSectionState {
+    headerText: string
+    overview: string
+    image: File | null
+    imageFileName: string
+    imageMediaFileId: number | undefined
+}
+
 export type CommonState = {
     currentRouteKey: string
     childrenMenuData: ChildrenMenuData | null
@@ -54,6 +62,7 @@ export type CommonState = {
     currentMenuPath: number[]
     menuPathItems: MenuPathItem[]
     activeSpeciality: string | null
+    overviewSection: OverviewSectionState
 }
 
 export const initialState: CommonState = {
@@ -63,6 +72,13 @@ export const initialState: CommonState = {
     currentMenuPath: [],
     menuPathItems: [],
     activeSpeciality: null,
+    overviewSection: {
+        headerText: '',
+        overview: '',
+        image: null,
+        imageFileName: '',
+        imageMediaFileId: undefined
+    }
 }
 
 export const commonSlice = createSlice({
@@ -119,6 +135,21 @@ export const commonSlice = createSlice({
         setActiveSpeciality: (state, action: PayloadAction<string | null>) => {
             state.activeSpeciality = action.payload
         },
+        setOverviewSection: (state, action: PayloadAction<OverviewSectionState>) => {
+            state.overviewSection = action.payload
+        },
+        updateOverviewSection: (state, action: PayloadAction<Partial<OverviewSectionState>>) => {
+            state.overviewSection = { ...state.overviewSection, ...action.payload }
+        },
+        clearOverviewSection: (state) => {
+            state.overviewSection = {
+                headerText: '',
+                overview: '',
+                image: null,
+                imageFileName: '',
+                imageMediaFileId: undefined
+            }
+        },
     },
 })
 
@@ -135,7 +166,10 @@ export const {
     setMenuPathItems,
     addToMenuPathItems,
     removeFromMenuPathItems,
-    setActiveSpeciality
+    setActiveSpeciality,
+    setOverviewSection,
+    updateOverviewSection,
+    clearOverviewSection
 } = commonSlice.actions
 
 export default commonSlice.reducer

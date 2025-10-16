@@ -3,15 +3,17 @@ import { useAppSelector, useAppDispatch } from '@/store'
 import { HiArrowLeft, HiPlus, HiPencil, HiXMark } from 'react-icons/hi2'
 import { useNavigate, useParams } from 'react-router-dom'
 import NavigationService from '@/services/NavigationService'
-import { setActiveSpeciality } from '@/store/slices/base/commonSlice'
+import { setActiveSpeciality, setOverviewSection, updateOverviewSection, OverviewSectionState } from '@/store/slices/base/commonSlice'
 import { Button, EditableImage, Card, Input } from '@/components/ui'
 import { FormItem, FormContainer } from '@/components/ui/Form'
 import { Field, Form, Formik } from 'formik'
 import * as Yup from 'yup'
 import { useUploadFileMutation } from '@/store/slices/fileUpload/fileUploadApiSlice'
+import { useUpdatePageSectionMutation } from '@/store/slices/pageSections/pageSectionsApiSlice'
 import toast from '@/components/ui/toast'
 import Notification from '@/components/ui/Notification'
-import { apiGetPageSections } from '@/services/HomeService'
+import { apiGetPageSections, PageSectionsData } from '@/services/HomeService'
+import { RichTextEditor } from '@/components/shared'
 
 const GrandchildMenuDisplay = () => {
     const { menuId } = useParams<{ menuId: string }>()
@@ -20,6 +22,7 @@ const GrandchildMenuDisplay = () => {
     
     const currentMenuPath = useAppSelector((state) => state.base.common.currentMenuPath)
     const menuPathItems = useAppSelector((state) => state.base.common.menuPathItems)
+    const overviewSection = useAppSelector((state) => state.base.common.overviewSection)
     
     const [parentPageData, setParentPageData] = useState<any>(null)
     const [innerPages, setInnerPages] = useState<any[]>([
@@ -32,6 +35,12 @@ const GrandchildMenuDisplay = () => {
     const [loading, setLoading] = useState(true)
     const [draggedItem, setDraggedItem] = useState<number | null>(null)
     const [uploadFile, { isLoading: isUploading }] = useUploadFileMutation()
+    const [updatePageSection, { isLoading: isUpdating }] = useUpdatePageSectionMutation()
+    
+    // State for page data and page ID
+    const [pageData, setPageData] = useState<PageSectionsData | null>(null)
+    const [pageId, setPageId] = useState<number | null>(null)
+    const [loadingPageData, setLoadingPageData] = useState(false)
 
     // Form states for different sections
     const [heroSection, setHeroSection] = useState({
@@ -52,13 +61,6 @@ const GrandchildMenuDisplay = () => {
         headerText: '',
         descriptionText: '',
         audioFile: null as File | null
-    })
-
-    const [overviewSection, setOverviewSection] = useState({
-        headerText: 'Overview',
-        overview: 'We are always indebted to Our Founder DR. M S Ramaiah, a visionary who built Institutions that redefined learning. It was his dream to impart Technical and Medical education to all, that made him establish two prestigious institutions, M S Ramaiah Institute of Technology (1962) and Ramaiah Medical College (1979). These are presently considered major hubs for education in the country.\n\nHe believed that investment in education was the way forward for the development & progress of the nation. His thoughts & spirit have been the driving force for the Ramaiah Group of Institutions to uphold his values and spiritual thoughts for the future.',
-        image: null as File | null,
-        imageFileName: 'In affiliation.jpeg'
     })
 
     const [coursesSection, setCoursesSection] = useState({
@@ -154,6 +156,12 @@ const GrandchildMenuDisplay = () => {
                 setParentPageData(response.data)
                 setInnerPages(response.data.children || [])
                 dispatch(setActiveSpeciality(response.data.title))
+                
+                // Set the page ID from the response
+                if (response.data.page_id) {
+                    setPageId(response.data.page_id)
+                    console.log('Page ID set to:', response.data.page_id)
+                }
             } else {
                 navigate('/home')
             }
@@ -165,9 +173,138 @@ const GrandchildMenuDisplay = () => {
         }
     }, [menuId, navigate, dispatch])
 
+    // Load page sections data
+    const loadPageSectionsData = useCallback(async () => {
+        if (!pageId) return
+
+        setLoadingPageData(true)
+        try {
+            console.log(`Loading page sections data for page ID: ${pageId}`)
+            const response = await apiGetPageSections(pageId.toString())
+            
+            if (response.data) {
+                setPageData(response.data)
+                console.log('Page sections data loaded:', response.data)
+            }
+        } catch (error) {
+            console.error('Error loading page sections data:', error)
+        } finally {
+            setLoadingPageData(false)
+        }
+    }, [pageId])
+
     useEffect(() => {
         loadPageData()
     }, [loadPageData])
+
+    // Load page sections data when pageId changes
+    useEffect(() => {
+        if (pageId) {
+            loadPageSectionsData()
+        }
+    }, [pageId, loadPageSectionsData])
+
+    // Update form states when page data changes
+    useEffect(() => {
+        try {
+            if (pageData && pageData.data && Array.isArray(pageData.data)) {
+                console.log('Updating form states with page data:', pageData.data)
+            
+            // Update Hero Section
+            const heroSection = pageData.data.find((section: any) => section.title === 'Hero')
+            if (heroSection && heroSection.content_blocks) {
+                const heroTextBlock = heroSection.content_blocks.find((block: any) => 
+                    block.block_type === 'text' && block.title
+                )
+                const heroImageBlock = heroSection.content_blocks.find((block: any) => 
+                    block.block_type === 'image' && block.media_files && block.media_files.length > 0
+                )
+                const heroBgImageBlock = heroSection.content_blocks.find((block: any) => 
+                    block.block_type === 'custom' && block.media_files && block.media_files.length > 0
+                )
+                
+                if (heroTextBlock) {
+                    setHeroSection(prev => ({
+                        ...prev,
+                        headerText: heroTextBlock?.title || '',
+                        heroImageFileName: heroImageBlock?.media_files?.[0]?.media_file?.original_filename || '',
+                        heroBgImageFileName: heroBgImageBlock?.media_files?.[0]?.media_file?.original_filename || ''
+                    }))
+                }
+            }
+
+            // Update Overview Section
+            const overviewSection = pageData.data.find((section: any) => section.name === 'overview')
+            if (overviewSection && overviewSection.content_blocks) {
+                // const overviewContentTitle = overviewSection.content_blocks.find((block: any) => block.title)
+                const overviewContentTitle = overviewSection.content_blocks.find((block: any) => 
+                    block.block_type === 'text' && block.title
+                )
+                console.log("overviewContentTitle", overviewContentTitle?.title);
+                const overviewContentBlock = overviewSection.content_blocks.find((block: any) => block.content)
+                const overviewImageBlock = overviewSection.content_blocks.find((block: any) => 
+                    block.block_type === 'image' && block.media_files && block.media_files.length > 0
+                )
+                console.log("overviewSectionnnn", overviewContentBlock);
+                if (overviewContentBlock || overviewContentTitle) {
+                    const newOverviewSection: OverviewSectionState = {
+                        headerText: overviewContentTitle?.title || '',
+                        overview: overviewContentBlock?.content || '',
+                        image: null,
+                        imageFileName: overviewImageBlock?.media_files?.[0]?.media_file?.original_filename || '',
+                        imageMediaFileId: overviewImageBlock?.media_files?.[0]?.media_file?.id
+                    }
+                    dispatch(setOverviewSection(newOverviewSection))
+                }
+            }
+
+            // Update Courses Section
+            const specialitiesSection = pageData.data.find((section: any) => section.name === 'our specialities')
+            if (specialitiesSection && specialitiesSection.content_blocks) {
+                const specialitiesDataBlock = specialitiesSection.content_blocks.find((block: any) => 
+                    block.specialties && block.specialties.length > 0
+                )
+                
+                if (specialitiesDataBlock?.specialties) {
+                    const courses = specialitiesDataBlock.specialties.map((specialty: any, index: number) => ({
+                        id: specialty.id || index + 1,
+                        text: specialty.name || '',
+                        link: ''
+                    }))
+                    
+                    setCoursesSection(prev => ({
+                        ...prev,
+                        headerText: 'Our Specialities',
+                        courses: courses
+                    }))
+                }
+            }
+
+            // Update Services Section
+            const servicesSection = pageData.data.find((section: any) => section.name === 'service & facilities')
+            if (servicesSection && servicesSection.content_blocks) {
+                const servicesDataBlock = servicesSection.content_blocks.find((block: any) => 
+                    block.facilitySpecialties && block.facilitySpecialties.length > 0
+                )
+                
+                if (servicesDataBlock?.facilitySpecialties) {
+                    const services = servicesDataBlock.facilitySpecialties.map((facilitySpecialty: any, index: number) => ({
+                        id: facilitySpecialty.id || index + 1,
+                        text: facilitySpecialty.facility?.name || ''
+                    }))
+                    
+                    setServicesFacilitiesSection(prev => ({
+                        ...prev,
+                        headerText: 'Services & Facilities',
+                        services: services
+                    }))
+                }
+            }
+            }
+        } catch (error) {
+            console.error('Error updating form states with page data:', error)
+        }
+    }, [pageData])
 
     const handleBackClick = () => {
         // Navigate back to the previous page
@@ -284,9 +421,119 @@ const GrandchildMenuDisplay = () => {
     }
 
     // Save handlers for each section
-    const handleSaveHeroSection = () => {
-        console.log('Saving hero section:', heroSection)
-        alert('Hero section saved successfully!')
+    const handleSaveHeroSection = async () => {
+        if (!pageId) {
+            toast.push(
+                <Notification type="danger" duration={2500} title="Error">
+                    Page ID is required to save hero section
+                </Notification>,
+                { placement: 'top-end' }
+            )
+            return
+        }
+
+        try {
+            // Get current page data to find hero section
+            if (!pageData || !pageData.data || !Array.isArray(pageData.data)) {
+                throw new Error('No page data available')
+            }
+
+            const heroSectionData = pageData.data.find((section: any) => section.title === 'Hero')
+            if (!heroSectionData) {
+                throw new Error('Hero section not found')
+            }
+
+            const contentBlocks: any[] = []
+            const changedObjects: string[] = []
+
+            // Update text block if header text changed
+            const heroTextBlock = heroSectionData.content_blocks?.find((block: any) => 
+                block.block_type === 'text' && block.title
+            )
+            if (heroTextBlock && heroSection.headerText !== heroTextBlock.title) {
+                contentBlocks.push({
+                    id: heroTextBlock.id,
+                    block_type: heroTextBlock.block_type,
+                    title: heroSection.headerText
+                })
+                changedObjects.push('Hero Header Text')
+            }
+
+            // Update hero image if changed
+            const heroImageBlock = heroSectionData.content_blocks?.find((block: any) => 
+                block.block_type === 'image' && block.media_files && block.media_files.length > 0
+            )
+            if (heroImageBlock && heroSection.heroImageMediaFileId) {
+                contentBlocks.push({
+                    id: heroImageBlock.id,
+                    block_type: heroImageBlock.block_type,
+                    media_files: [{
+                        id: heroImageBlock.media_files[0].id,
+                        content_block_id: heroImageBlock.id,
+                        media_file_id: heroSection.heroImageMediaFileId,
+                        media_type: "primary",
+                        display_order: 1
+                    }]
+                })
+                changedObjects.push('Hero Image')
+            }
+
+            // Update hero background image if changed
+            const heroBgImageBlock = heroSectionData.content_blocks?.find((block: any) => 
+                block.block_type === 'custom' && block.media_files && block.media_files.length > 0
+            )
+            if (heroBgImageBlock && heroSection.heroBgImageMediaFileId) {
+                contentBlocks.push({
+                    id: heroBgImageBlock.id,
+                    block_type: heroBgImageBlock.block_type,
+                    media_files: [{
+                        id: heroBgImageBlock.media_files[0].id,
+                        content_block_id: heroBgImageBlock.id,
+                        media_file_id: heroSection.heroBgImageMediaFileId,
+                        media_type: "primary",
+                        display_order: 1
+                    }]
+                })
+                changedObjects.push('Hero Background Image')
+            }
+
+            // Build the update data structure
+            const updateData = {
+                id: heroSectionData.id,
+                name: heroSectionData.name,
+                title: heroSectionData.title,
+                content_blocks: contentBlocks
+            }
+
+            console.log('Final payload being sent:', updateData)
+            console.log('Only these objects are being updated:', changedObjects)
+
+            // Make the actual API call
+            const result = await updatePageSection({ 
+                pageId: pageId.toString(), 
+                sectionId: heroSectionData.id, 
+                updateData 
+            }).unwrap()
+
+            if (result.success) {
+                toast.push(
+                    <Notification type="success" duration={2500} title="Success">
+                        Hero section updated successfully
+                    </Notification>,
+                    { placement: 'top-end' }
+                )
+            } else {
+                throw new Error(result.message || 'Failed to update hero section')
+            }
+        } catch (error: any) {
+            const errorMessage = error?.data?.message || error?.message || 'Failed to update hero section'
+            toast.push(
+                <Notification type="danger" duration={3000} title="Error">
+                    {errorMessage}
+                </Notification>,
+                { placement: 'top-end' }
+            )
+        }
     }
 
     const handleSaveAudioSection = () => {
@@ -312,17 +559,17 @@ const GrandchildMenuDisplay = () => {
                 // Update the overview section with the uploaded file info
                 const responseData = result.data as any
                 if (responseData?.savedMedia?.original_filename) {
-                    setOverviewSection({
-                        ...overviewSection,
+                    dispatch(updateOverviewSection({
                         image: file,
-                        imageFileName: responseData.savedMedia.original_filename
-                    })
+                        imageFileName: responseData.savedMedia.original_filename,
+                        imageMediaFileId: responseData.savedMedia.id
+                    }))
                 } else if (responseData?.filePath) {
-                    setOverviewSection({
-                        ...overviewSection,
+                    dispatch(updateOverviewSection({
                         image: file,
-                        imageFileName: responseData.filePath
-                    })
+                        imageFileName: responseData.filePath,
+                        imageMediaFileId: responseData.savedMedia?.id
+                    }))
                 }
             } else {
                 throw new Error(result.message)
@@ -436,9 +683,111 @@ const GrandchildMenuDisplay = () => {
         }
     }
 
-    const handleSaveOverviewSection = () => {
-        console.log('Saving overview section:', overviewSection)
-        alert('Overview section saved successfully!')
+    const handleSaveOverviewSection = async () => {
+        if (!pageId) {
+            toast.push(
+                <Notification type="danger" duration={2500} title="Error">
+                    Page ID is required to save overview section
+                </Notification>,
+                { placement: 'top-end' }
+            )
+            return
+        }
+
+        try {
+            // Get current page data to find overview section
+            if (!pageData || !pageData.data || !Array.isArray(pageData.data)) {
+                throw new Error('No page data available')
+            }
+
+            const overviewSectionData = pageData.data.find((section: any) => section.name === 'overview')
+            if (!overviewSectionData) {
+                throw new Error('Overview section not found')
+            }
+
+            const contentBlocks: any[] = []
+            const changedObjects: string[] = []
+
+            // Update title block if header text changed
+            const overviewTitleBlock = overviewSectionData.content_blocks?.find((block: any) => 
+                block.block_type === 'text' && block.title
+            )
+            if (overviewTitleBlock && overviewSection.headerText !== overviewTitleBlock.title) {
+                contentBlocks.push({
+                    id: overviewTitleBlock.id,
+                    block_type: overviewTitleBlock.block_type,
+                    title: overviewSection.headerText
+                })
+                changedObjects.push('Overview Header Text')
+            }
+
+            // Update content block if overview text changed
+            const overviewContentBlock = overviewSectionData.content_blocks?.find((block: any) => block.content)
+            if (overviewContentBlock && overviewSection.overview !== overviewContentBlock.content) {
+                contentBlocks.push({
+                    id: overviewContentBlock.id,
+                    block_type: overviewContentBlock.block_type,
+                    content: overviewSection.overview
+                })
+                changedObjects.push('Overview Content')
+            }
+
+            // Update image block if image changed
+            const overviewImageBlock = overviewSectionData.content_blocks?.find((block: any) => 
+                block.block_type === 'image' && block.media_files && block.media_files.length > 0
+            )
+            if (overviewImageBlock && overviewSection.imageMediaFileId) {
+                contentBlocks.push({
+                    id: overviewImageBlock.id,
+                    block_type: overviewImageBlock.block_type,
+                    media_files: [{
+                        id: overviewImageBlock.media_files[0].id,
+                        content_block_id: overviewImageBlock.id,
+                        media_file_id: overviewSection.imageMediaFileId,
+                        media_type: "primary",
+                        display_order: 1
+                    }]
+                })
+                changedObjects.push('Overview Image')
+            }
+
+            // Build the update data structure
+            const updateData = {
+                id: overviewSectionData.id,
+                name: overviewSectionData.name,
+                title: overviewSectionData.title,
+                content_blocks: contentBlocks
+            }
+
+            console.log('Final payload being sent:', updateData)
+            console.log('Only these objects are being updated:', changedObjects)
+
+            // Make the actual API call
+            const result = await updatePageSection({ 
+                pageId: pageId.toString(), 
+                sectionId: overviewSectionData.id, 
+                updateData 
+            }).unwrap()
+
+            if (result.success) {
+                toast.push(
+                    <Notification type="success" duration={2500} title="Success">
+                        Overview section updated successfully
+                    </Notification>,
+                    { placement: 'top-end' }
+                )
+            } else {
+                throw new Error(result.message || 'Failed to update overview section')
+            }
+        } catch (error: any) {
+            const errorMessage = error?.data?.message || error?.message || 'Failed to update overview section'
+            toast.push(
+                <Notification type="danger" duration={3000} title="Error">
+                    {errorMessage}
+                </Notification>,
+                { placement: 'top-end' }
+            )
+        }
     }
 
     const handleCourseTextChange = (courseId: number, newText: string) => {
@@ -472,9 +821,102 @@ const GrandchildMenuDisplay = () => {
         })
     }
 
-    const handleSaveCoursesSection = () => {
-        console.log('Saving courses section:', coursesSection)
-        alert('Courses section saved successfully!')
+    const handleSaveCoursesSection = async () => {
+        if (!pageId) {
+            toast.push(
+                <Notification type="danger" duration={2500} title="Error">
+                    Page ID is required to save courses section
+                </Notification>,
+                { placement: 'top-end' }
+            )
+            return
+        }
+
+        try {
+            // Get current page data to find specialities section
+            if (!pageData || !pageData.data || !Array.isArray(pageData.data)) {
+                throw new Error('No page data available')
+            }
+
+            const specialitiesSectionData = pageData.data.find((section: any) => section.name === 'our specialities')
+            if (!specialitiesSectionData) {
+                throw new Error('Our Specialities section not found')
+            }
+
+            const contentBlocks: any[] = []
+            const changedObjects: string[] = []
+
+            // Update title block if header text changed
+            const specialitiesTitleBlock = specialitiesSectionData.content_blocks?.find((block: any) => 
+                block.block_type === 'text' && block.title
+            )
+            if (specialitiesTitleBlock && coursesSection.headerText !== specialitiesTitleBlock.title) {
+                contentBlocks.push({
+                    id: specialitiesTitleBlock.id,
+                    block_type: specialitiesTitleBlock.block_type,
+                    title: coursesSection.headerText
+                })
+                changedObjects.push('Our Specialities Header Text')
+            }
+
+            // Update specialities data block if courses changed
+            const specialitiesDataBlock = specialitiesSectionData.content_blocks?.find((block: any) => 
+                block.specialties && block.specialties.length > 0
+            )
+            
+            if (specialitiesDataBlock) {
+                // Convert courses to specialties format
+                const specialties = coursesSection.courses.map(course => ({
+                    id: course.id,
+                    name: course.text,
+                    link: course.link
+                }))
+
+                contentBlocks.push({
+                    id: specialitiesDataBlock.id,
+                    block_type: specialitiesDataBlock.block_type,
+                    specialties: specialties
+                })
+                changedObjects.push('Our Specialities')
+            }
+
+            // Build the update data structure
+            const updateData = {
+                id: specialitiesSectionData.id,
+                name: specialitiesSectionData.name,
+                title: specialitiesSectionData.title,
+                content_blocks: contentBlocks
+            }
+
+            console.log('Final payload being sent:', updateData)
+            console.log('Only these objects are being updated:', changedObjects)
+
+            // Make the actual API call
+            const result = await updatePageSection({ 
+                pageId: pageId.toString(), 
+                sectionId: specialitiesSectionData.id, 
+                updateData 
+            }).unwrap()
+
+            if (result.success) {
+                toast.push(
+                    <Notification type="success" duration={2500} title="Success">
+                        Our Specialities section updated successfully
+                    </Notification>,
+                    { placement: 'top-end' }
+                )
+            } else {
+                throw new Error(result.message || 'Failed to update our specialities section')
+            }
+        } catch (error: any) {
+            const errorMessage = error?.data?.message || error?.message || 'Failed to update our specialities section'
+            toast.push(
+                <Notification type="danger" duration={3000} title="Error">
+                    {errorMessage}
+                </Notification>,
+                { placement: 'top-end' }
+            )
+        }
     }
 
     const handleSaveExpertsSection = () => {
@@ -510,9 +952,103 @@ const GrandchildMenuDisplay = () => {
         })
     }
 
-    const handleSaveServicesFacilitiesSection = () => {
-        console.log('Saving services & facilities section:', servicesFacilitiesSection)
-        alert('Services & Facilities section saved successfully!')
+    const handleSaveServicesFacilitiesSection = async () => {
+        if (!pageId) {
+            toast.push(
+                <Notification type="danger" duration={2500} title="Error">
+                    Page ID is required to save services & facilities section
+                </Notification>,
+                { placement: 'top-end' }
+            )
+            return
+        }
+
+        try {
+            // Get current page data to find services section
+            if (!pageData || !pageData.data || !Array.isArray(pageData.data)) {
+                throw new Error('No page data available')
+            }
+
+            const servicesSectionData = pageData.data.find((section: any) => section.name === 'service & facilities')
+            if (!servicesSectionData) {
+                throw new Error('Services & Facilities section not found')
+            }
+
+            const contentBlocks: any[] = []
+            const changedObjects: string[] = []
+
+            // Update title block if header text changed
+            const servicesTitleBlock = servicesSectionData.content_blocks?.find((block: any) => 
+                block.block_type === 'text' && block.title
+            )
+            if (servicesTitleBlock && servicesFacilitiesSection.headerText !== servicesTitleBlock.title) {
+                contentBlocks.push({
+                    id: servicesTitleBlock.id,
+                    block_type: servicesTitleBlock.block_type,
+                    title: servicesFacilitiesSection.headerText
+                })
+                changedObjects.push('Services & Facilities Header Text')
+            }
+
+            // Update services data block if services changed
+            const servicesDataBlock = servicesSectionData.content_blocks?.find((block: any) => 
+                block.facilitySpecialties && block.facilitySpecialties.length > 0
+            )
+            
+            if (servicesDataBlock) {
+                // Convert services to facility specialties format
+                const facilitySpecialties = servicesFacilitiesSection.services.map(service => ({
+                    id: service.id,
+                    facility: {
+                        name: service.text
+                    }
+                }))
+
+                contentBlocks.push({
+                    id: servicesDataBlock.id,
+                    block_type: servicesDataBlock.block_type,
+                    facilitySpecialties: facilitySpecialties
+                })
+                changedObjects.push('Services & Facilities')
+            }
+
+            // Build the update data structure
+            const updateData = {
+                id: servicesSectionData.id,
+                name: servicesSectionData.name,
+                title: servicesSectionData.title,
+                content_blocks: contentBlocks
+            }
+
+            console.log('Final payload being sent:', updateData)
+            console.log('Only these objects are being updated:', changedObjects)
+
+            // Make the actual API call
+            const result = await updatePageSection({ 
+                pageId: pageId.toString(), 
+                sectionId: servicesSectionData.id, 
+                updateData 
+            }).unwrap()
+
+            if (result.success) {
+                toast.push(
+                    <Notification type="success" duration={2500} title="Success">
+                        Services & Facilities section updated successfully
+                    </Notification>,
+                    { placement: 'top-end' }
+                )
+            } else {
+                throw new Error(result.message || 'Failed to update services & facilities section')
+            }
+        } catch (error: any) {
+            const errorMessage = error?.data?.message || error?.message || 'Failed to update services & facilities section'
+            toast.push(
+                <Notification type="danger" duration={3000} title="Error">
+                    {errorMessage}
+                </Notification>,
+                { placement: 'top-end' }
+            )
+        }
     }
 
     const handleSaveEnquiryFormSection = () => {
@@ -837,9 +1373,10 @@ const GrandchildMenuDisplay = () => {
                 <div className="flex justify-end">
                     <Button
                         onClick={handleSaveHeroSection}
+                        loading={isUpdating}
                         className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white px-4 py-2 font-medium transition-all duration-200"
                     >
-                        Save
+                        {isUpdating ? 'Saving...' : 'Save'}
                     </Button>
                 </div>
             </div>
@@ -854,7 +1391,7 @@ const GrandchildMenuDisplay = () => {
                     <input
                         type="text"
                         value={overviewSection.headerText}
-                        onChange={(e) => setOverviewSection({ ...overviewSection, headerText: e.target.value })}
+                        onChange={(e) => dispatch(updateOverviewSection({ headerText: e.target.value }))}
                         className="w-full px-4 py-3 border border-gray-300 rounded-[24px] bg-white"
                         placeholder="Enter header text..."
                     />
@@ -863,12 +1400,34 @@ const GrandchildMenuDisplay = () => {
                 {/* Content */}
                 <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
-                    <textarea
-                        rows={6}
+                    <RichTextEditor
                         value={overviewSection.overview}
-                        onChange={(e) => setOverviewSection({ ...overviewSection, overview: e.target.value })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-[24px] bg-white resize-none"
+                        onChange={(value) => dispatch(updateOverviewSection({ overview: value }))}
                         placeholder="Enter content here..."
+                        theme="snow"
+                        modules={{
+                            toolbar: [
+                                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                                ['bold', 'italic', 'underline', 'strike'],
+                                [{ 'color': ['#305FC2','#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#00ADEF', '#D60F8C'] }, { 'background': ['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#00ADEF', '#D60F8C'] }],
+                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                [{ 'indent': '-1'}, { 'indent': '+1' }],
+                                [{ 'align': [] }],
+                                ['link', 'image'],
+                                ['clean']
+                            ],
+                            clipboard: {
+                                matchVisual: false
+                            }
+                        }}
+                        formats={[
+                            'header', 'bold', 'italic', 'underline', 'strike',
+                            'color', 'background', 'list', 'bullet', 'indent',
+                            'align', 'link', 'image'
+                        ]}
+                        style={{
+                            minHeight: '200px',
+                        }}
                     />
                 </div>
 
@@ -900,9 +1459,10 @@ const GrandchildMenuDisplay = () => {
                 <div className="flex justify-end">
                     <Button
                         onClick={handleSaveOverviewSection}
+                        loading={isUpdating}
                         className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white px-4 py-2 font-medium transition-all duration-200"
                     >
-                        Save
+                        {isUpdating ? 'Saving...' : 'Save'}
                     </Button>
                 </div>
             </div>
@@ -965,9 +1525,10 @@ const GrandchildMenuDisplay = () => {
                 <div className="flex justify-end">
                     <Button
                         onClick={handleSaveCoursesSection}
+                        loading={isUpdating}
                         className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white px-4 py-2 font-medium transition-all duration-200"
                     >
-                        Save
+                        {isUpdating ? 'Saving...' : 'Save'}
                     </Button>
                 </div>
             </div>
@@ -1028,9 +1589,10 @@ const GrandchildMenuDisplay = () => {
                 <div className="flex justify-end">
                     <Button
                         onClick={handleSaveServicesFacilitiesSection}
+                        loading={isUpdating}
                         className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white px-4 py-2 font-medium transition-all duration-200"
                     >
-                        Save
+                        {isUpdating ? 'Saving...' : 'Save'}
                     </Button>
                 </div>
             </div>
