@@ -1602,7 +1602,8 @@ const GrandchildMenuDisplay = () => {
                             onClick={addNewCourse}
                             className="flex items-center gap-2 px-4 py-2 !rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white transition-colors"
                         >
-                            {coursesSection.headerText === 'Our Focus Areas' ? 'Add New Focus Area' : 'Add New Course'}
+                            {/* {coursesSection.headerText === 'Our Focus Areas' ? 'Add New Focus Area' : 'Add New Course'} */}
+                            Add New Course
                         </button>
                     </div>
                     <div className="">
@@ -1610,7 +1611,8 @@ const GrandchildMenuDisplay = () => {
                             <div key={course.id} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-lg">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-600 mb-2">
-                                        {coursesSection.headerText === 'Our Focus Areas' ? 'Focus Area Text' : 'Button Text'}
+                                        {/* {coursesSection.headerText === 'Our Focus Areas' ? 'Focus Area Text' : 'Button Text'} */}
+                                        Button Text
                                     </label>
                                     <input
                                         type="text"
