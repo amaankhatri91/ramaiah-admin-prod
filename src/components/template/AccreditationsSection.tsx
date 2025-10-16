@@ -191,7 +191,7 @@ const AccreditationsSection = () => {
             const changedObjects: string[] = []
             
             // Check if header text changed
-            const headerTextChanged = initialValues.headerText !== values.headerText
+            const headerTextChanged = values.headerText
             
             // Check if certificates changed
             const initialCertificates = initialValues.certificates

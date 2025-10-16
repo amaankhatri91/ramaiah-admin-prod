@@ -182,7 +182,7 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
             const changedObjects = []
             
             // 1. Check if Header Text changed
-            const headerTextChanged = values.headerText !== initialValues.headerText
+            const headerTextChanged = values.headerText 
             console.log('Header Text comparison:', {
                 current: values.headerText,
                 initial: initialValues.headerText,
