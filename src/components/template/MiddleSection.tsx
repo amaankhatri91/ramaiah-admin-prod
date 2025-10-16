@@ -45,9 +45,9 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
     const getInitialValues = (): MiddleSectionFormSchema => {
         if (!homeData?.data) {
             return {
-                headerText: "Our 20+ Years of Legacy & Clinical Excellence",
-                subHeaderText: "With over two decades of dedicated service, we have built a legacy of clinical excellence that continues to transform lives. Our commitment to providing world-class healthcare has made us a trusted name in medical care.",
-                doctorSpeakVideo: "Doctor_Speak_Video.mp4"
+                headerText: "",
+                subHeaderText: "",
+                doctorSpeakVideo: ""
             }
         }
         
@@ -62,21 +62,21 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
         )
         const headerText = headerBlock?.title 
         
-        // Second object: Text block with content (Sub Header Text)
+        // Second object: Custom block with content (Sub Header Text)
         const contentBlock = middleBlocks.find(block => 
-            block.block_type === 'text' && 
+            block.block_type === 'custom' && 
             block.content && 
             block.content.includes('Ramaiah Memorial Hospital')
         )
-        const subHeaderText = contentBlock?.content || "With over two decades of dedicated service, we have built a legacy of clinical excellence that continues to transform lives. Our commitment to providing world-class healthcare has made us a trusted name in medical care."
+        const subHeaderText = contentBlock?.content || ""
         
         // Third object: Video block with media file (Doctor Speak Video)
         const videoBlock = middleBlocks.find(block => block.block_type === 'video')
-        const doctorSpeakVideo = videoBlock?.media_files?.[0]?.media_file?.original_filename || "Doctor_Speak_Video.mp4"
+        const doctorSpeakVideo = videoBlock?.media_files?.[0]?.media_file?.original_filename || ""
         const doctorSpeakVideoMediaFileId = videoBlock?.media_files?.[0]?.media_file?.id
         
         return {
-            headerText: headerText,
+            headerText: headerText || "",
             subHeaderText: subHeaderText,
             doctorSpeakVideo: doctorSpeakVideo,
             doctorSpeakVideoMediaFileId: doctorSpeakVideoMediaFileId
