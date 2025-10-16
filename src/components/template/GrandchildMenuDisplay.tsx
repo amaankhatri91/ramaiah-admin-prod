@@ -37,6 +37,13 @@ const GrandchildMenuDisplay = () => {
     const [uploadFile, { isLoading: isUploading }] = useUploadFileMutation()
     const [updatePageSection, { isLoading: isUpdating }] = useUpdatePageSectionMutation()
     
+    // Individual loading states for each Save button
+    const [isHeroSectionSaving, setIsHeroSectionSaving] = useState(false)
+    const [isOverviewSectionSaving, setIsOverviewSectionSaving] = useState(false)
+    const [isCoursesSectionSaving, setIsCoursesSectionSaving] = useState(false)
+    const [isServicesSectionSaving, setIsServicesSectionSaving] = useState(false)
+    const [isWhyChooseUsSectionSaving, setIsWhyChooseUsSectionSaving] = useState(false)
+    
     // State for page data and page ID
     const [pageData, setPageData] = useState<PageSectionsData | null>(null)
     const [pageId, setPageId] = useState<number | null>(null)
@@ -432,6 +439,7 @@ const GrandchildMenuDisplay = () => {
             return
         }
 
+        setIsHeroSectionSaving(true)
         try {
             // Get current page data to find hero section
             if (!pageData || !pageData.data || !Array.isArray(pageData.data)) {
@@ -533,6 +541,8 @@ const GrandchildMenuDisplay = () => {
                 </Notification>,
                 { placement: 'top-end' }
             )
+        } finally {
+            setIsHeroSectionSaving(false)
         }
     }
 
@@ -694,6 +704,7 @@ const GrandchildMenuDisplay = () => {
             return
         }
 
+        setIsOverviewSectionSaving(true)
         try {
             // Get current page data to find overview section
             if (!pageData || !pageData.data || !Array.isArray(pageData.data)) {
@@ -787,6 +798,8 @@ const GrandchildMenuDisplay = () => {
                 </Notification>,
                 { placement: 'top-end' }
             )
+        } finally {
+            setIsOverviewSectionSaving(false)
         }
     }
 
@@ -832,6 +845,7 @@ const GrandchildMenuDisplay = () => {
             return
         }
 
+        setIsCoursesSectionSaving(true)
         try {
             // Get current page data to find specialities section
             if (!pageData || !pageData.data || !Array.isArray(pageData.data)) {
@@ -916,6 +930,8 @@ const GrandchildMenuDisplay = () => {
                 </Notification>,
                 { placement: 'top-end' }
             )
+        } finally {
+            setIsCoursesSectionSaving(false)
         }
     }
 
@@ -963,6 +979,7 @@ const GrandchildMenuDisplay = () => {
             return
         }
 
+        setIsServicesSectionSaving(true)
         try {
             // Get current page data to find services section
             if (!pageData || !pageData.data || !Array.isArray(pageData.data)) {
@@ -1048,6 +1065,8 @@ const GrandchildMenuDisplay = () => {
                 </Notification>,
                 { placement: 'top-end' }
             )
+        } finally {
+            setIsServicesSectionSaving(false)
         }
     }
 
@@ -1133,9 +1152,20 @@ const GrandchildMenuDisplay = () => {
         return 'th'
     }
 
-    const handleSaveWhyChooseUsSection = () => {
-        console.log('Saving why choose us section:', whyChooseUsSection)
-        alert('Why Choose Us section saved successfully!')
+    const handleSaveWhyChooseUsSection = async () => {
+        setIsWhyChooseUsSectionSaving(true)
+        try {
+            console.log('Saving why choose us section:', whyChooseUsSection)
+            // TODO: Implement actual API call for Why Choose Us section
+            // For now, just simulate a delay
+            await new Promise(resolve => setTimeout(resolve, 1000))
+            alert('Why Choose Us section saved successfully!')
+        } catch (error) {
+            console.error('Error saving Why Choose Us section:', error)
+            alert('Failed to save Why Choose Us section')
+        } finally {
+            setIsWhyChooseUsSectionSaving(false)
+        }
     }
 
     if (loading) {
@@ -1373,10 +1403,10 @@ const GrandchildMenuDisplay = () => {
                 <div className="flex justify-end">
                     <Button
                         onClick={handleSaveHeroSection}
-                        loading={isUpdating}
+                        loading={isHeroSectionSaving}
                         className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white px-4 py-2 font-medium transition-all duration-200"
                     >
-                        {isUpdating ? 'Saving...' : 'Save'}
+                        {isHeroSectionSaving ? 'Saving...' : 'Save'}
                     </Button>
                 </div>
             </div>
@@ -1459,10 +1489,10 @@ const GrandchildMenuDisplay = () => {
                 <div className="flex justify-end">
                     <Button
                         onClick={handleSaveOverviewSection}
-                        loading={isUpdating}
+                        loading={isOverviewSectionSaving}
                         className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white px-4 py-2 font-medium transition-all duration-200"
                     >
-                        {isUpdating ? 'Saving...' : 'Save'}
+                        {isOverviewSectionSaving ? 'Saving...' : 'Save'}
                     </Button>
                 </div>
             </div>
@@ -1525,10 +1555,10 @@ const GrandchildMenuDisplay = () => {
                 <div className="flex justify-end">
                     <Button
                         onClick={handleSaveCoursesSection}
-                        loading={isUpdating}
+                        loading={isCoursesSectionSaving}
                         className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white px-4 py-2 font-medium transition-all duration-200"
                     >
-                        {isUpdating ? 'Saving...' : 'Save'}
+                        {isCoursesSectionSaving ? 'Saving...' : 'Save'}
                     </Button>
                 </div>
             </div>
@@ -1589,10 +1619,10 @@ const GrandchildMenuDisplay = () => {
                 <div className="flex justify-end">
                     <Button
                         onClick={handleSaveServicesFacilitiesSection}
-                        loading={isUpdating}
+                        loading={isServicesSectionSaving}
                         className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white px-4 py-2 font-medium transition-all duration-200"
                     >
-                        {isUpdating ? 'Saving...' : 'Save'}
+                        {isServicesSectionSaving ? 'Saving...' : 'Save'}
                     </Button>
                 </div>
             </div>
@@ -1703,7 +1733,7 @@ const GrandchildMenuDisplay = () => {
             </div> */}
 
             {/* Why Choose Us Section */}
-            <Card className="bg-white rounded-xl">
+            {/* <Card className="bg-white rounded-xl">
                 <div className="px-2">
                     <p className="text-[#495057] font-inter text-[14px] font-semibold leading-normal mb-[20px]">Why Choose Us Section</p>
 
@@ -1716,7 +1746,7 @@ const GrandchildMenuDisplay = () => {
                         {({ values, setFieldValue, touched, errors, isSubmitting }) => (
                             <Form>
                                 <FormContainer>
-                                    {/* Header and Sub Header */}
+                                  
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                         <div>
                                             <FormItem
@@ -1750,11 +1780,10 @@ const GrandchildMenuDisplay = () => {
                                         </div>
                                     </div>
 
-                                    {/* Why Choose Us Rows */}
                                     <div className="">
                                         {values.rows.map((row, index) => (
                                             <div key={row.id} className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                                                {/* Header of Row */}
+                                            
                                                 <div>
                                                     <FormItem
                                                         label={`Header of ${index + 1}${getOrdinalSuffix(index)} Box`}
@@ -1771,7 +1800,7 @@ const GrandchildMenuDisplay = () => {
                                                     </FormItem>
                                                 </div>
 
-                                                {/* Sub Header of Row */}
+                                        
                                                 <div>
                                                     <FormItem
                                                         label={`Sub header of ${index + 1}${getOrdinalSuffix(index)} Box`}
@@ -1788,7 +1817,7 @@ const GrandchildMenuDisplay = () => {
                                                     </FormItem>
                                                 </div>
 
-                                                {/* Row Icon */}
+                                      
                                                 <div>
                                                     <label className="block text-[#495057] font-inter text-[14px] font-medium leading-normal mb-2">
                                                         {index + 1}{getOrdinalSuffix(index)} Box Icon
@@ -1822,14 +1851,14 @@ const GrandchildMenuDisplay = () => {
                                         ))}
                                     </div>
 
-                                    {/* Save Button */}
+                        
                                     <div className="flex justify-end">
                                         <Button
                                             type="submit"
-                                            loading={isSubmitting}
+                                            loading={isWhyChooseUsSectionSaving}
                                             className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white px-4 py-2 font-medium transition-all duration-200"
                                         >
-                                            {isSubmitting ? 'Saving...' : 'Save'}
+                                            {isWhyChooseUsSectionSaving ? 'Saving...' : 'Save'}
                                         </Button>
                                     </div>
                                 </FormContainer>
@@ -1837,7 +1866,7 @@ const GrandchildMenuDisplay = () => {
                         )}
                     </Formik>
                 </div>
-            </Card>
+            </Card> */}
         </div>
     )
 }
