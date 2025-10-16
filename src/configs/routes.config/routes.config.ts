@@ -113,4 +113,10 @@ export const protectedRoutes = [
         component: lazy(() => import('@/views/AddGrandchild')),
         authority: [],
     },
+    {
+        key: 'pageCreate',
+        path: '/page-create',
+        component: lazy(() => import('../../views/PageCreate')),
+        authority: [],
+    },
 ]

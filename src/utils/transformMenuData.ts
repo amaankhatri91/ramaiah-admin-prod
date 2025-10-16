@@ -94,6 +94,16 @@ export const transformSidebarMenuData = (apiResponse: any): NavigationTree[] => 
                 authority: [],
                 subMenu: [],
             },
+            {
+                key: 'pageCreate',
+                path: '/page-create',
+                title: 'Page Create',
+                translateKey: 'nav.pageCreate',
+                icon: '',
+                type: NAV_ITEM_TYPE_ITEM,
+                authority: [],
+                subMenu: [],
+            },
         ],
     }
     

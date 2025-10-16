@@ -296,3 +296,20 @@ export async function apiUpdatePageSection(pageId: string, sectionId: number, up
         throw error
     }
 }
+
+// API function to create a new section
+export async function apiCreateSection(sectionData: any) {
+    console.log('Making API call to /home/section with POST method')
+    try {
+        const response = await ApiService.fetchData<UpdateHomeResponse>({
+            url: '/home/section',
+            method: 'post',
+            data: sectionData,
+        })
+        console.log('Create Section API Response received:', response)
+        return response
+    } catch (error) {
+        console.error('Create Section API Error:', error)
+        throw error
+    }
+}

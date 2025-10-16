@@ -265,8 +265,11 @@ const GrandchildMenuDisplay = () => {
                 }
             }
 
-            // Update Courses Section
-            const specialitiesSection = pageData.data.find((section: any) => section.name === 'our specialities')
+            // Update Courses Section - Check for both 'our specialities' and 'Our Focus Areas'
+            let specialitiesSection = pageData.data.find((section: any) => section.name === 'our specialities')
+            let focusAreasSection = pageData.data.find((section: any) => section.name === 'Our Foucs Areas')
+            
+            // Try to find specialities data first
             if (specialitiesSection && specialitiesSection.content_blocks) {
                 const specialitiesDataBlock = specialitiesSection.content_blocks.find((block: any) => 
                     block.specialties && block.specialties.length > 0
@@ -282,6 +285,29 @@ const GrandchildMenuDisplay = () => {
                     setCoursesSection(prev => ({
                         ...prev,
                         headerText: 'Our Specialities',
+                        courses: courses
+                    }))
+                }
+            }
+            // If no specialities found, try to get data from Our Focus Areas section
+            else if (focusAreasSection && focusAreasSection.content_blocks) {
+                const focusAreasDataBlock = focusAreasSection.content_blocks.find((block: any) => 
+                    block.statistics && block.statistics.length > 0
+                )
+                
+                if (focusAreasDataBlock?.statistics) {
+                    const courses = focusAreasDataBlock.statistics.map((statistic: any, index: number) => ({
+                        id: statistic.id || index + 1,
+                        text: statistic.statistic_text || '',
+                        link: ''
+                    }))
+                    
+                    // Get the header text from the statistic block title
+                    const headerText = focusAreasDataBlock.title || 'Our Focus Areas'
+                    
+                    setCoursesSection(prev => ({
+                        ...prev,
+                        headerText: headerText,
                         courses: courses
                     }))
                 }
@@ -317,6 +343,7 @@ const GrandchildMenuDisplay = () => {
         // Navigate back to the previous page
         navigate(-1)
     }
+
 
     const handleAddInnerPage = () => {
         // Handle adding new inner page
@@ -823,9 +850,10 @@ const GrandchildMenuDisplay = () => {
 
     const addNewCourse = () => {
         const newCourseId = Math.max(...coursesSection.courses.map(course => course.id), 0) + 1
+        const isFocusAreas = coursesSection.headerText === 'Our Focus Areas'
         const newCourse = {
             id: newCourseId,
-            text: `New Course ${newCourseId}`,
+            text: isFocusAreas ? `New Focus Area ${newCourseId}` : `New Course ${newCourseId}`,
             link: ''
         }
         setCoursesSection({
@@ -847,58 +875,98 @@ const GrandchildMenuDisplay = () => {
 
         setIsCoursesSectionSaving(true)
         try {
-            // Get current page data to find specialities section
+            // Get current page data to find specialities or focus areas section
             if (!pageData || !pageData.data || !Array.isArray(pageData.data)) {
                 throw new Error('No page data available')
             }
 
-            const specialitiesSectionData = pageData.data.find((section: any) => section.name === 'our specialities')
-            if (!specialitiesSectionData) {
-                throw new Error('Our Specialities section not found')
+            // Try to find specialities section first, then focus areas section
+            let sectionData = pageData.data.find((section: any) => section.name === 'our specialities')
+            let isFocusAreas = false
+            
+            if (!sectionData) {
+                sectionData = pageData.data.find((section: any) => section.name === 'Our Foucs Areas')
+                isFocusAreas = true
+            }
+            
+            if (!sectionData) {
+                throw new Error('Our Specialities or Our Focus Areas section not found')
             }
 
             const contentBlocks: any[] = []
             const changedObjects: string[] = []
 
             // Update title block with header text (always update)
-            const specialitiesTitleBlock = specialitiesSectionData.content_blocks?.find((block: any) => 
+            let titleBlock = sectionData.content_blocks?.find((block: any) => 
                 block.block_type === 'text' && block.title
             )
-            if (specialitiesTitleBlock) {
+            
+            // For Our Focus Areas, the title might be in the statistic block
+            if (!titleBlock && isFocusAreas) {
+                titleBlock = sectionData.content_blocks?.find((block: any) => 
+                    block.block_type === 'statistic' && block.title
+                )
+            }
+            
+            if (titleBlock) {
                 contentBlocks.push({
-                    id: specialitiesTitleBlock.id,
-                    block_type: specialitiesTitleBlock.block_type,
+                    id: titleBlock.id,
+                    block_type: titleBlock.block_type,
                     title: coursesSection.headerText
                 })
-                changedObjects.push('Our Specialities Header Text')
+                changedObjects.push(`${isFocusAreas ? 'Our Focus Areas' : 'Our Specialities'} Header Text`)
             }
 
-            // Update specialities data block if courses changed
-            const specialitiesDataBlock = specialitiesSectionData.content_blocks?.find((block: any) => 
-                block.specialties && block.specialties.length > 0
-            )
-            
-            if (specialitiesDataBlock) {
-                // Convert courses to specialties format
-                const specialties = coursesSection.courses.map(course => ({
-                    id: course.id,
-                    name: course.text,
-                    link: course.link
-                }))
+            // Update data block based on section type
+            if (isFocusAreas) {
+                // Handle Our Focus Areas section with statistics
+                const statisticsDataBlock = sectionData.content_blocks?.find((block: any) => 
+                    block.statistics && block.statistics.length > 0
+                )
+                
+                if (statisticsDataBlock) {
+                    // Convert courses to statistics format
+                    const statistics = coursesSection.courses.map(course => ({
+                        id: course.id,
+                        statistic_text: course.text,
+                        statistics_image: null
+                    }))
 
-                contentBlocks.push({
-                    id: specialitiesDataBlock.id,
-                    block_type: specialitiesDataBlock.block_type,
-                    specialties: specialties
-                })
-                changedObjects.push('Our Specialities')
+                    contentBlocks.push({
+                        id: statisticsDataBlock.id,
+                        block_type: statisticsDataBlock.block_type,
+                        statistics: statistics
+                    })
+                    changedObjects.push('Our Focus Areas')
+                }
+            } else {
+                // Handle Our Specialities section with specialties
+                const specialitiesDataBlock = sectionData.content_blocks?.find((block: any) => 
+                    block.specialties && block.specialties.length > 0
+                )
+                
+                if (specialitiesDataBlock) {
+                    // Convert courses to specialties format
+                    const specialties = coursesSection.courses.map(course => ({
+                        id: course.id,
+                        name: course.text,
+                        link: course.link
+                    }))
+
+                    contentBlocks.push({
+                        id: specialitiesDataBlock.id,
+                        block_type: specialitiesDataBlock.block_type,
+                        specialties: specialties
+                    })
+                    changedObjects.push('Our Specialities')
+                }
             }
 
             // Build the update data structure
             const updateData = {
-                id: specialitiesSectionData.id,
-                name: specialitiesSectionData.name,
-                title: specialitiesSectionData.title,
+                id: sectionData.id,
+                name: sectionData.name,
+                title: sectionData.title,
                 content_blocks: contentBlocks
             }
 
@@ -908,19 +976,19 @@ const GrandchildMenuDisplay = () => {
             // Make the actual API call
             const result = await updatePageSection({ 
                 pageId: pageId.toString(), 
-                sectionId: specialitiesSectionData.id, 
+                sectionId: sectionData.id, 
                 updateData 
             }).unwrap()
 
             if (result.success) {
                 toast.push(
                     <Notification type="success" duration={2500} title="Success">
-                        Our Specialities section updated successfully
+                        {isFocusAreas ? 'Our Focus Areas' : 'Our Specialities'} section updated successfully
                     </Notification>,
                     { placement: 'top-end' }
                 )
             } else {
-                throw new Error(result.message || 'Failed to update our specialities section')
+                throw new Error(result.message || `Failed to update ${isFocusAreas ? 'our focus areas' : 'our specialities'} section`)
             }
         } catch (error: any) {
             const errorMessage = error?.data?.message || error?.message || 'Failed to update our specialities section'
@@ -1184,6 +1252,8 @@ const GrandchildMenuDisplay = () => {
             </div>
         )
     }
+    console.log(pageData,"pageDatadaynamicffff");
+    
 
     return (
         <div className="p-6 bg-gray-50 min-h-screen">
@@ -1335,6 +1405,17 @@ const GrandchildMenuDisplay = () => {
                     </div>
                 </div>
             )}
+
+            {/* Add Pages Button */}
+            <div className="mb-6 flex justify-end">
+                <Button 
+                    onClick={() => navigate('/page-create', { state: { pageData: pageData } })}
+                    className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white text-center font-inter text-[14px] font-medium leading-normal !px-6 !py-3"
+                >
+                    
+                    Add Pages
+                </Button>
+            </div>
 
             {/* Hero Section */}
             <div className="bg-white rounded-[20px] shadow-sm border border-gray-200 p-6 mb-6">
@@ -1497,7 +1578,7 @@ const GrandchildMenuDisplay = () => {
                 </div>
             </div>
 
-            {/* Our Specialities */}
+            {/* Our Specialities / Our Focus Areas */}
             <div className="mb-6 p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
                 <h3 className="text-[#495057] font-inter text-[16px] font-semibold leading-normal mb-6">Our Specialities</h3>
 
@@ -1513,7 +1594,7 @@ const GrandchildMenuDisplay = () => {
                     />
                 </div>
 
-                {/* Course Management */}
+                {/* Course/Focus Area Management */}
                 <div className="mb-6">
                     <div className="flex items-center justify-between mb-4">
                         <label className="block text-sm font-medium text-gray-700">Manage Courses</label>
@@ -1521,23 +1602,25 @@ const GrandchildMenuDisplay = () => {
                             onClick={addNewCourse}
                             className="flex items-center gap-2 px-4 py-2 !rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white transition-colors"
                         >
-                            Add New Course
+                            {coursesSection.headerText === 'Our Focus Areas' ? 'Add New Focus Area' : 'Add New Course'}
                         </button>
                     </div>
                     <div className="">
                         {coursesSection.courses.map((course) => (
                             <div key={course.id} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-lg">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-600 mb-2">Button Text</label>
+                                    <label className="block text-sm font-medium text-gray-600 mb-2">
+                                        {coursesSection.headerText === 'Our Focus Areas' ? 'Focus Area Text' : 'Button Text'}
+                                    </label>
                                     <input
                                         type="text"
                                         value={course.text}
                                         onChange={(e) => handleCourseTextChange(course.id, e.target.value)}
                                         className="w-full px-4 py-3 border border-gray-300 rounded-[24px] bg-white"
-                                        placeholder="Enter button text..."
+                                        placeholder={coursesSection.headerText === 'Our Focus Areas' ? 'Enter focus area text...' : 'Enter button text...'}
                                     />
                                 </div>
-                                <div>
+                                {/* <div>
                                     <label className="block text-sm font-medium text-gray-600 mb-2">Button Link</label>
                                     <input
                                         type="url"
@@ -1546,7 +1629,7 @@ const GrandchildMenuDisplay = () => {
                                         className="w-full px-4 py-3 border border-gray-300 rounded-[24px] bg-white"
                                         placeholder="Enter button link..."
                                     />
-                                </div>
+                                </div> */}
                             </div>
                         ))}
                     </div>
