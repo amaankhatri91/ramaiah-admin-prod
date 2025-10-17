@@ -16,7 +16,27 @@ const PageCreate = () => {
     const location = useLocation()
     // console.log("location",location);
     const pageData = location.state?.pageData
-    console.log("pageDatadaynamic",pageData.data[0]);
+    console.log("pageDatadaynamic", pageData?.data?.[0]);
+    
+    // Early return if pageData is not available
+    if (!pageData?.data?.[0]) {
+        return (
+            <div className="p-6 bg-gray-50 min-h-screen">
+                <div className="flex items-center justify-center h-64">
+                    <div className="text-center">
+                        <h2 className="text-xl font-semibold text-gray-800 mb-2">No Page Data Available</h2>
+                        <p className="text-gray-600 mb-4">Please navigate back and try again.</p>
+                        <button
+                            onClick={() => navigate(-1)}
+                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                        >
+                            Go Back
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )
+    }
     
     // Local state for overview section instead of Redux store
     const [overviewSection, setOverviewSection] = useState({
@@ -117,11 +137,11 @@ const PageCreate = () => {
             
             // Static payload for creating section
             const sectionData = {
-                "name": pageData.data[0].name,
-                "title": pageData.data[0].title,
-                "section_type": pageData.data[0].section_type,
-                "page_id": pageData.data[0].page_id,
-                "display_order": pageData.data[0].display_order
+                "name": pageData?.data?.[0]?.name || '',
+                "title": pageData?.data?.[0]?.title || '',
+                "section_type": pageData?.data?.[0]?.section_type || '',
+                "page_id": pageData?.data?.[0]?.page_id || '',
+                "display_order": pageData?.data?.[0]?.display_order || 0
             }
             
             // Call the API to create section
