@@ -1270,12 +1270,12 @@ console.log("heroSectionddd",heroSection);
                 <div className="bg-white rounded-[24px] shadow-sm border border-gray-200 p-6 mb-6">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-[#495057] font-inter text-[16px] font-semibold leading-normal">Inner Pages</h2>
-                        <Button
+                        {/* <Button
                             onClick={handleAddPage}
                             className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white text-center font-inter text-[14px] font-medium leading-normal !px-4 !py-1"
                         >
                             Add New Page
-                        </Button>
+                        </Button> */}
                     </div>
 
                     {pages.length > 0 ? (
@@ -1556,12 +1556,12 @@ console.log("heroSectionddd",heroSection);
                 <div className="mb-6">
                     <div className="flex items-center justify-between mb-4">
                         <label className="block text-sm font-medium text-gray-700">Manage Courses</label>
-                        <button
+                        {/* <button
                             onClick={addNewCourse}
                             className="flex items-center gap-2 px-4 py-2 !rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white transition-colors"
                         >
                             Add New Course
-                        </button>
+                        </button> */}
                     </div>
                     <div className="">
                         {coursesSection.courses.map((course) => (
@@ -1622,12 +1622,12 @@ console.log("heroSectionddd",heroSection);
                 <div className="mb-6">
                     <div className="flex items-center justify-between mb-4">
                         <label className="block text-sm font-medium text-gray-700">Services & Facilities</label>
-                        <Button
+                        {/* <Button
                             onClick={addNewService}
                             className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white text-center font-inter text-[14px] font-medium leading-normal !px-4 !py-1"
                         >
                             Add New Service
-                        </Button>
+                        </Button> */}
                     </div>
                     <div className="">
                         {servicesFacilitiesSection.services.map((service) => (
@@ -1666,142 +1666,7 @@ console.log("heroSectionddd",heroSection);
                 </div>
             </div>
 
-            {/* Why Choose Us Section */}
-            <Card className="bg-white rounded-xl">
-                <div className="px-2">
-                    <p className="text-[#495057] font-inter text-[14px] font-semibold leading-normal mb-[20px]">Why Choose Us Section</p>
-
-                    <Formik
-                        initialValues={whyChooseUsSection}
-                        validationSchema={whyChooseUsValidationSchema}
-                        onSubmit={handleSaveWhyChooseUsSection}
-                        enableReinitialize={true}
-                    >
-                        {({ values, setFieldValue, touched, errors, isSubmitting }) => (
-                            <Form>
-                                <FormContainer>
-                                    {/* Header and Sub Header */}
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                        <div>
-                                            <FormItem
-                                                label="Header Text"
-                                                labelClass="text-[#495057] font-inter text-[14px] font-medium leading-normal"
-                                                invalid={(errors.headerText && touched.headerText) as boolean}
-                                                errorMessage={errors.headerText}
-                                            >
-                                                <Field
-                                                    name="headerText"
-                                                    component={Input}
-                                                    className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                                                    placeholder="Enter header text"
-                                                />
-                                            </FormItem>
-                                        </div>
-                                        <div>
-                                            <FormItem
-                                                label="Sub Header Text"
-                                                labelClass="text-[#495057] font-inter text-[14px] font-medium leading-normal"
-                                                invalid={(errors.subHeaderText && touched.subHeaderText) as boolean}
-                                                errorMessage={errors.subHeaderText}
-                                            >
-                                                <Field
-                                                    name="subHeaderText"
-                                                    component={Input}
-                                                    className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                                                    placeholder="Enter sub header text"
-                                                />
-                                            </FormItem>
-                                        </div>
-                                    </div>
-
-                                    {/* Why Choose Us Rows */}
-                                    <div className="">
-                                        {values.rows.map((row, index) => (
-                                            <div key={row.id} className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                                                {/* Header of Row */}
-                                                <div>
-                                                    <FormItem
-                                                        label={`Header of ${index + 1}${getOrdinalSuffix(index)} Box`}
-                                                        labelClass="text-[#495057] font-inter text-[14px] font-medium leading-normal"
-                                                        invalid={(errors.rows?.[index] && typeof errors.rows[index] === 'object' && (errors.rows[index] as any)?.header && touched.rows?.[index]?.header) as boolean}
-                                                        errorMessage={errors.rows?.[index] && typeof errors.rows[index] === 'object' ? String((errors.rows[index] as any)?.header || '') : undefined}
-                                                    >
-                                                        <Input
-                                                            value={row.header}
-                                                            onChange={(e) => handleWhyChooseUsRowChange(setFieldValue, values.rows, row.id, 'header', e.target.value)}
-                                                            className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                                                            placeholder="Enter header"
-                                                        />
-                                                    </FormItem>
-                                                </div>
-
-                                                {/* Sub Header of Row */}
-                                                <div>
-                                                    <FormItem
-                                                        label={`Sub header of ${index + 1}${getOrdinalSuffix(index)} Box`}
-                                                        labelClass="text-[#495057] font-inter text-[14px] font-medium leading-normal"
-                                                        invalid={(errors.rows?.[index] && typeof errors.rows[index] === 'object' && (errors.rows[index] as any)?.subHeader && touched.rows?.[index]?.subHeader) as boolean}
-                                                        errorMessage={errors.rows?.[index] && typeof errors.rows[index] === 'object' ? String((errors.rows[index] as any)?.subHeader || '') : undefined}
-                                                    >
-                                                        <Input
-                                                            value={row.subHeader}
-                                                            onChange={(e) => handleWhyChooseUsRowChange(setFieldValue, values.rows, row.id, 'subHeader', e.target.value)}
-                                                            className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                                                            placeholder="Enter sub header"
-                                                        />
-                                                    </FormItem>
-                                                </div>
-
-                                                {/* Row Icon */}
-                                                <div>
-                                                    <label className="block text-[#495057] font-inter text-[14px] font-medium leading-normal mb-2">
-                                                        {index + 1}{getOrdinalSuffix(index)} Box Icon
-                                                    </label>
-                                                    <div className="flex w-full">
-                                                        <div className="flex flex-col w-full sm:flex-row sm:items-center sm:justify-between rounded-[24px] border-[0.75px] border-[#CED4DA] mr-[20px]">
-                                                            <div className="flex-1 mb-3 sm:mb-0">
-                                                                <span className="text-gray-700 font-medium pl-4">{row.icon}</span>
-                                                            </div>
-                                                            <div className="flex flex-col sm:flex-row gap-3">
-                                                                <input
-                                                                    ref={(el) => fileInputRefs.current[row.id] = el}
-                                                                    type="file"
-                                                                    accept="image/*,.svg"
-                                                                    onChange={(e) => handleWhyChooseUsIconUpload(setFieldValue, values.rows, row.id, e)}
-                                                                    className="hidden"
-                                                                />
-                                                                <Button
-                                                                    type="button"
-                                                                    loading={uploadingBoxId === row.id && isUploading}
-                                                                    onClick={() => handleWhyChooseUsFileInputClick(row.id)}
-                                                                    className="!bg-[#C5C5C5] !text-[#495057] !rounded-[24px] font-inter text-[14px] font-medium leading-normal"
-                                                                >
-                                                                    {uploadingBoxId === row.id && isUploading ? 'Uploading...' : 'Upload File'}
-                                                                </Button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    {/* Save Button */}
-                                    <div className="flex justify-end">
-                                        <Button
-                                            type="submit"
-                                            loading={isSubmitting}
-                                            className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white px-4 py-2 font-medium transition-all duration-200"
-                                        >
-                                            {isSubmitting ? 'Saving...' : 'Save'}
-                                        </Button>
-                                    </div>
-                                </FormContainer>
-                            </Form>
-                        )}
-                    </Formik>
-                </div>
-            </Card>
+       
         </div>
     )
 }

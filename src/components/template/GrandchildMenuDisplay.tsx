@@ -1598,13 +1598,13 @@ const GrandchildMenuDisplay = () => {
                 <div className="mb-6">
                     <div className="flex items-center justify-between mb-4">
                         <label className="block text-sm font-medium text-gray-700">Manage Courses</label>
-                        <button
+                        {/* <button
                             onClick={addNewCourse}
                             className="flex items-center gap-2 px-4 py-2 !rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white transition-colors"
-                        >
+                        > */}
                             {/* {coursesSection.headerText === 'Our Focus Areas' ? 'Add New Focus Area' : 'Add New Course'} */}
-                            Add New Course
-                        </button>
+                            {/* Add New Course
+                        </button> */}
                     </div>
                     <div className="">
                         {coursesSection.courses.map((course) => (
@@ -1668,12 +1668,12 @@ const GrandchildMenuDisplay = () => {
                 <div className="mb-6">
                     <div className="flex items-center justify-between mb-4">
                         <label className="block text-sm font-medium text-gray-700">Services & Facilities</label>
-                        <Button
+                        {/* <Button
                             onClick={addNewService}
                             className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white text-center font-inter text-[14px] font-medium leading-normal !px-4 !py-1"
                         >
                             Add New Service
-                        </Button>
+                        </Button> */}
                     </div>
                     <div className="">
                         {servicesFacilitiesSection.services.map((service) => (
