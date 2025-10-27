@@ -7,6 +7,7 @@ import { useUploadFileMutation } from '@/store/slices/fileUpload/fileUploadApiSl
 import { useGetHomeDataQuery, useUpdateHomeSectionMutation } from '@/store/slices/home'
 import { parseMiddleSection } from '@/services/HomeService'
 import { toast, Notification } from '@/components/ui'
+import { RichTextEditor } from '@/components/shared'
 
 type MiddleSectionFormSchema = {
     headerText: string
@@ -53,21 +54,42 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
         
         // Parse the data based on the three objects structure
         const middleBlocks = homeData.data.filter(block => block.section_id === sectionId)
+        console.log('Middle blocks for section', sectionId, ':', middleBlocks)
         
         // First object: Text block with title (Header Text)
-        const headerBlock = middleBlocks.find(block => 
+        // Try to find the header block by looking for text blocks first
+        let headerBlock = middleBlocks.find(block => 
             block.block_type === 'text' && 
             block.title && 
             block.title.includes('Legacy & Clinical Excellence')
         )
-        const headerText = headerBlock?.title 
+        
+        // If not found, try to find any text block that might contain the header
+        if (!headerBlock) {
+            headerBlock = middleBlocks.find(block => 
+                block.block_type === 'text' && 
+                block.title
+            )
+        }
+        
+        const headerText = headerBlock?.title || "Our 20+ Years of Legacy & Clinical Excellence"
         
         // Second object: Custom block with content (Sub Header Text)
-        const contentBlock = middleBlocks.find(block => 
+        // Try to find content block with Ramaiah Memorial Hospital text
+        let contentBlock = middleBlocks.find(block => 
             block.block_type === 'custom' && 
             block.content && 
             block.content.includes('Ramaiah Memorial Hospital')
         )
+        
+        // If not found, try to find any custom block with content
+        if (!contentBlock) {
+            contentBlock = middleBlocks.find(block => 
+                block.block_type === 'custom' && 
+                block.content
+            )
+        }
+        
         const subHeaderText = contentBlock?.content || ""
         
         // Third object: Video block with media file (Doctor Speak Video)
@@ -75,12 +97,15 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
         const doctorSpeakVideo = videoBlock?.media_files?.[0]?.media_file?.original_filename || ""
         const doctorSpeakVideoMediaFileId = videoBlock?.media_files?.[0]?.media_file?.id
         
-        return {
-            headerText: headerText || "",
+        const finalValues = {
+            headerText: headerText,
             subHeaderText: subHeaderText,
             doctorSpeakVideo: doctorSpeakVideo,
             doctorSpeakVideoMediaFileId: doctorSpeakVideoMediaFileId
         }
+        
+        console.log('Final initial values for Middle Section:', finalValues)
+        return finalValues
     }
 
     const handleVideoUpload = async (setFieldValue: any, event: React.ChangeEvent<HTMLInputElement>) => {
@@ -348,6 +373,7 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
                     </div>
                 ) : (
                     <Formik
+                        key={homeData?.data ? 'loaded' : 'loading'}
                         initialValues={getInitialValues()}
                         validationSchema={validationSchema}
                         onSubmit={onSubmit}
@@ -366,12 +392,39 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
                                             invalid={(errors.headerText && touched.headerText) as boolean}
                                             errorMessage={errors.headerText}
                                         >
-                                            <Field
-                                                name="headerText"
-                                                component={Input}
-                                                className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                                                placeholder="Enter header text"
-                                            />
+                                            <Field name="headerText">
+                                                {({ field, form }: any) => (
+                                                    <RichTextEditor
+                                                        value={field.value || ''}
+                                                        onChange={(value) => form.setFieldValue('headerText', value)}
+                                                        placeholder="Enter header text"
+                                                        theme="snow"
+                                                        modules={{
+                                                            toolbar: [
+                                                                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                                                                ['bold', 'italic', 'underline', 'strike'],
+                                                                [{ 'color': ['#D60F8C','#305FC2','#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#00ADEF', '#D60F8C'] }, { 'background': ['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#00ADEF', '#D60F8C'] }],
+                                                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                                                [{ 'indent': '-1'}, { 'indent': '+1' }],
+                                                                [{ 'align': [] }],
+                                                                ['link', 'image'],
+                                                                ['clean']
+                                                            ],
+                                                            clipboard: {
+                                                                matchVisual: false
+                                                            }
+                                                        }}
+                                                        formats={[
+                                                            'header', 'bold', 'italic', 'underline', 'strike',
+                                                            'color', 'background', 'list', 'bullet', 'indent',
+                                                            'align', 'link', 'image'
+                                                        ]}
+                                                        style={{
+                                                            minHeight: '150px'
+                                                        }}
+                                                    />
+                                                )}
+                                            </Field>
                                         </FormItem>
                                     </div>
 
@@ -383,12 +436,39 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
                                             invalid={(errors.subHeaderText && touched.subHeaderText) as boolean}
                                             errorMessage={errors.subHeaderText}
                                         >
-                                            <Field
-                                                name="subHeaderText"
-                                                component={Input}
-                                                className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                                                placeholder="Enter sub header text"
-                                            />
+                                            <Field name="subHeaderText">
+                                                {({ field, form }: any) => (
+                                                    <RichTextEditor
+                                                        value={field.value || ''}
+                                                        onChange={(value) => form.setFieldValue('subHeaderText', value)}
+                                                        placeholder="Enter sub header text"
+                                                        theme="snow"
+                                                        modules={{
+                                                            toolbar: [
+                                                                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                                                                ['bold', 'italic', 'underline', 'strike'],
+                                                                [{ 'color': ['#305FC2','#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#00ADEF', '#D60F8C'] }, { 'background': ['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#00ADEF', '#D60F8C'] }],
+                                                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                                                [{ 'indent': '-1'}, { 'indent': '+1' }],
+                                                                [{ 'align': [] }],
+                                                                ['link', 'image'],
+                                                                ['clean']
+                                                            ],
+                                                            clipboard: {
+                                                                matchVisual: false
+                                                            }
+                                                        }}
+                                                        formats={[
+                                                            'header', 'bold', 'italic', 'underline', 'strike',
+                                                            'color', 'background', 'list', 'bullet', 'indent',
+                                                            'align', 'link', 'image'
+                                                        ]}
+                                                        style={{
+                                                            minHeight: '150px'
+                                                        }}
+                                                    />
+                                                )}
+                                            </Field>
                                         </FormItem>
                                     </div>
                                 </div>

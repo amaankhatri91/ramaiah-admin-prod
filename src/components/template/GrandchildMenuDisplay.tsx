@@ -1417,9 +1417,10 @@ const GrandchildMenuDisplay = () => {
                 </Button>
             </div>
 
-            {/* Hero Section */}
-            <div className="bg-white rounded-[20px] shadow-sm border border-gray-200 p-6 mb-6">
-                <h2 className="text-[#495057] font-inter text-[16px] font-semibold leading-normal mb-6">Hero Section</h2>
+            {/* Hero Section - Only show if title is available */}
+            {pageData?.data?.find((section: any) => section.title === 'Hero') && (
+                <div className="bg-white rounded-[20px] shadow-sm border border-gray-200 p-6 mb-6">
+                    <h2 className="text-[#495057] font-inter text-[16px] font-semibold leading-normal mb-6">Hero Section</h2>
 
                 <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Header Text</label>
@@ -1490,11 +1491,13 @@ const GrandchildMenuDisplay = () => {
                         {isHeroSectionSaving ? 'Saving...' : 'Save'}
                     </Button>
                 </div>
-            </div>
+                </div>
+            )}
 
-            {/* Speciality Overview Section */}
-            <div className="mb-6 p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-                <h3 className="text-[#495057] font-inter text-[16px] font-semibold leading-normal mb-6">Overview Section</h3>
+            {/* Speciality Overview Section - Only show if title is available */}
+            {pageData?.data?.find((section: any) => section.name === 'overview') && (
+                <div className="mb-6 p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+                    <h3 className="text-[#495057] font-inter text-[16px] font-semibold leading-normal mb-6">Overview Section</h3>
 
                 {/* Header Text */}
                 <div className="mb-6">
@@ -1576,11 +1579,14 @@ const GrandchildMenuDisplay = () => {
                         {isOverviewSectionSaving ? 'Saving...' : 'Save'}
                     </Button>
                 </div>
-            </div>
+                </div>
+            )}
 
-            {/* Our Specialities / Our Focus Areas */}
-            <div className="mb-6 p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-                <h3 className="text-[#495057] font-inter text-[16px] font-semibold leading-normal mb-6">Our Specialities</h3>
+            {/* Our Specialities / Our Focus Areas - Only show if title is available */}
+            {(pageData?.data?.find((section: any) => section.name === 'our specialities') || 
+              pageData?.data?.find((section: any) => section.name === 'Our Foucs Areas')) && (
+                <div className="mb-6 p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+                    <h3 className="text-[#495057] font-inter text-[16px] font-semibold leading-normal mb-6">Our Specialities</h3>
 
                 {/* Header Text */}
                 <div className="mb-6">
@@ -1646,11 +1652,13 @@ const GrandchildMenuDisplay = () => {
                         {isCoursesSectionSaving ? 'Saving...' : 'Save'}
                     </Button>
                 </div>
-            </div>
+                </div>
+            )}
 
-            {/* Services & Facilities Section */}
-            <div className="mb-6 p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-                <h3 className="text-[#495057] font-inter text-[16px] font-semibold leading-normal mb-6">Services & Facilities Section</h3>
+            {/* Services & Facilities Section - Only show if title is available */}
+            {pageData?.data?.find((section: any) => section.name === 'service & facilities') && (
+                <div className="mb-6 p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+                    <h3 className="text-[#495057] font-inter text-[16px] font-semibold leading-normal mb-6">Services & Facilities Section</h3>
 
                 {/* Header Text */}
                 <div className="mb-6">
@@ -1710,7 +1718,8 @@ const GrandchildMenuDisplay = () => {
                         {isServicesSectionSaving ? 'Saving...' : 'Save'}
                     </Button>
                 </div>
-            </div>
+                </div>
+            )}
 
             {/* Enquiry Form Section */}
             {/* <div className="mb-6 p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
