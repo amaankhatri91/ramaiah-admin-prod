@@ -81,6 +81,12 @@ const DefaultItem = (props: DefaultItemProps) => {
                             return
                         }
                         
+                        // Special handling for International Patient Care - navigate to /international-patient
+                        if (nav.title.toLowerCase().includes('international patient care') && nav.path === '/international-patient') {
+                            // Let React Router handle International Patient Care navigation normally
+                            return
+                        }
+                        
                         if (!isNaN(numericMenuId)) {
                             e.preventDefault() // Prevent default link navigation only for dynamic menus
                             handleMenuClick(numericMenuId)

@@ -98,6 +98,12 @@ const DefaultItem = ({ nav, onLinkClick, userAuthority, sideCollapsed }: Default
                                     return
                                 }
                                 
+                                // Special handling for International Patient Care - navigate to /international-patient
+                                if (subNav.title.toLowerCase().includes('international patient care') && subNav.path === '/international-patient') {
+                                    // Let React Router handle International Patient Care navigation normally
+                                    return
+                                }
+                                
                                 if (!isNaN(numericMenuId)) {
                                     e.preventDefault() // Prevent default link navigation only for dynamic menus
                                     handleChildrenMenuClick(numericMenuId)
@@ -242,6 +248,12 @@ const CollapsedItem = ({
                                 // Special handling for Home menu - it should navigate to /home
                                 if (subNav.title.toLowerCase() === 'home' && subNav.path === '/home') {
                                     // Let React Router handle Home navigation normally
+                                    return
+                                }
+                                
+                                // Special handling for International Patient Care - navigate to /international-patient
+                                if (subNav.title.toLowerCase().includes('international patient care') && subNav.path === '/international-patient') {
+                                    // Let React Router handle International Patient Care navigation normally
                                     return
                                 }
                                 

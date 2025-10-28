@@ -11,10 +11,12 @@ import {
 export const transformMenuItemToNavigationTree = (item: MenuItem): NavigationTree => {
     const hasChildren = item.children && item.children.length > 0
     
-    // Special handling for Home menu - ensure it has the correct path
+    // Special handling for specific menu items
     let path = item.url || ''
     if (item.title.toLowerCase() === 'home') {
         path = '/home'
+    } else if (item.title.toLowerCase().includes('international patient care')) {
+        path = '/international-patient'
     }
     
     return {
