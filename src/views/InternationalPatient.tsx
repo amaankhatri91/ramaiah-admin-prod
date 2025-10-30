@@ -263,17 +263,19 @@ const InternationalPatient = () => {
                     }
 
                     const overviewSectionData = sectionsData.find((section: any) => section.section_type === 'overview')
+                    console.log("overviewSectionDataccccccccccccccccccccccccc", overviewSectionData);
+                    
                     if (overviewSectionData && overviewSectionData.content_blocks) {
-                        const overviewContentTitle = overviewSectionData.content_blocks.find((block: any) => block.title)
+                        // const overviewContentTitle = overviewSectionData.content_blocks.find((block: any) => block.title)
                         const overviewContentBlock = overviewSectionData.content_blocks.find((block: any) => block.content)
                         const overviewImageBlock = overviewSectionData.content_blocks.find((block: any) =>
                             block.block_type === 'image' && block.media_files && block.media_files.length > 0
                         )
                         console.log("overviewImageBlock", overviewImageBlock);
 
-                        if (overviewContentBlock || overviewContentTitle || overviewImageBlock) {
+                        if (overviewContentBlock ||  overviewImageBlock || overviewSectionData)  {
                             const newOverview: OverviewSectionState = {
-                                headerText: overviewContentTitle?.title || '',
+                                headerText: overviewSectionData?.title || '',
                                 overview: overviewContentBlock?.content || '',
                                 image: null,
                                 imageFileName: overviewImageBlock?.media_files?.[0]?.media_file?.original_filename || '',
@@ -353,7 +355,7 @@ const InternationalPatient = () => {
                         const services = serviceBlocks.map((block: any, index: number) => ({
                             id: block.id || index + 1,
                             title: block.title || '',
-                            image: null as File | null,
+                                image: null as File | null,
                             imageFileName: block.media_files?.[0]?.media_file?.original_filename || '',
                             imageMediaFileId: block.media_files?.[0]?.media_file?.id
                         }))
@@ -381,7 +383,7 @@ const InternationalPatient = () => {
                         );
                       
                         setTravelAccommodationSection((prev) => ({
-                          ...prev,
+                                ...prev,
                           headerText: travelAccommodationSectionData.title || "",
                           services: services,
                         }));
@@ -458,7 +460,7 @@ const InternationalPatient = () => {
                       
                         // Set everything into state
                         setStatisticsSection((prev: any) => ({
-                          ...prev,
+                        ...prev,
                           headerText,
                           subHeader: subHeaderText,
                           boxes: boxes || [],
@@ -483,55 +485,6 @@ const InternationalPatient = () => {
 
         fetchPageData()
     }, [])
-
-    // Function to parse and set section data
-    const parseAndSetSectionData = (sectionsData: any) => {
-        try {
-            if (!sectionsData || !Array.isArray(sectionsData)) {
-                console.log('No valid sections data found')
-                return
-            }
-            console.log("sectionsData", sectionsData);
-            console.log('📝 Section Names:', sectionsData.map((section: any) => section.name))
-            sectionsData.forEach((section: any, index: number) => {
-                console.log(`   Section ${index + 1}: ${section.name} (ID: ${section.id})`)
-            })
-
-        
-            // Parse Statistics Section
-            const ramaiahStatsSection = sectionsData.find(
-                (section: any) => section.name === "Ramaiah Memorial Hospital, Bengaluru"
-              );
-              
-              if (ramaiahStatsSection && ramaiahStatsSection.content_blocks?.length > 0) {
-                const block = ramaiahStatsSection.content_blocks[0];
-              
-                // Map statistics array into boxes (like hospital stats)
-                const boxes = block.statistics?.slice(0, 8).map((stat: any, index: number) => ({
-                  id: stat.id || index + 1,
-                  header: stat.number || '', // main number value
-                  subHeader: stat.label || '', // label text e.g. "Beds"
-                  suffix: stat.suffix || '', // e.g. "+"
-                  icon: null as File | null,
-                  iconFileName:
-                    stat.statistics_image?.split('/').pop() || '', // extract image name
-                  iconMediaUrl: stat.statistics_image || '', // full image URL
-                }));
-              
-                // Set state for the section
-                setStatisticsSection((prev: any) => ({
-                  ...prev,
-                  headerText: ramaiahStatsSection.title || 'Ramaiah Memorial Hospital, Bengaluru',
-                  subHeader: ramaiahStatsSection.subtitle || '',
-                  boxes: boxes || [],
-                }));
-              }
-              
-
-        } catch (error) {
-            console.error('Error parsing section data:', error)
-        }
-    }
 
     // Handler functions for different sections
     const handleHeroImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
