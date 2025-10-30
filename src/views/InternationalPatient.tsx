@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react'
+import { useAppDispatch, useAppSelector } from '@/store'
+import { setOverviewSection as setOverviewSectionRedux, updateOverviewSection as updateOverviewSectionRedux, OverviewSectionState } from '@/store/slices/base/commonSlice'
 import { Card, Button, Input } from '@/components/ui'
 import { HiXMark } from 'react-icons/hi2'
 import { apiGetPageSections, PageSectionsResponse, PageSectionsData } from '@/services/HomeService'
@@ -9,20 +11,23 @@ import Notification from '@/components/ui/Notification'
 import { RichTextEditor } from '@/components/shared'
 
 const InternationalPatient = () => {
+    const dispatch = useAppDispatch()
+    const overviewSectionFromRedux = useAppSelector((state) => state.base.common.overviewSection)
+
     // State for API response data
     const [apiResponseData, setApiResponseData] = useState<any>(null)
     const [showApiLog, setShowApiLog] = useState<boolean>(false)
     const [loading, setLoading] = useState<boolean>(false)
     const [pageData, setPageData] = useState<any>(null)
-    
+
     // API hooks
     const [uploadFile, { isLoading: isUploading }] = useUploadFileMutation()
     const [updatePageSection, { isLoading: isUpdating }] = useUpdatePageSectionMutation()
-    
+
     // Separate loading states for each section
     const [isHeroSaving, setIsHeroSaving] = useState(false)
     const [isOverviewSaving, setIsOverviewSaving] = useState(false)
-    
+
     // Separate loading states for each upload button
     const [isHeroImageUploading, setIsHeroImageUploading] = useState(false)
     const [isHeroBgImageUploading, setIsHeroBgImageUploading] = useState(false)
@@ -42,7 +47,7 @@ const InternationalPatient = () => {
         heroBgImageFileName: '',
         heroBgImageMediaFileId: undefined as number | undefined
     })
-console.log("heroSectionnnnnnnnnnnnnnnnnnnnnnn",heroSection);
+    console.log("heroSectionnnnnnnnnnnnnnnnnnnnnnn", heroSection);
 
     const [overviewSection, setOverviewSection] = useState({
         headerText: '',
@@ -51,6 +56,7 @@ console.log("heroSectionnnnnnnnnnnnnnnnnnnnnnn",heroSection);
         imageFileName: '',
         imageMediaFileId: undefined as number | undefined
     })
+    console.log("overviewSectionnnnnnnnnnnnnnnnnnnnnnn", overviewSection);
 
     const [coursesSection, setCoursesSection] = useState({
         headerText: 'Our Services',
@@ -63,7 +69,7 @@ console.log("heroSectionnnnnnnnnnnnnnnnnnnnnnn",heroSection);
     })
 
     const [whyChooseUsSection, setWhyChooseUsSection] = useState({
-        headerText: 'Why Choose RMH',
+        headerText: '',
         items: [
             { id: 1, title: '', image: null as File | null, imageFileName: '', imageMediaFileId: undefined as number | undefined },
             { id: 2, title: '', image: null as File | null, imageFileName: '', imageMediaFileId: undefined as number | undefined },
@@ -73,27 +79,29 @@ console.log("heroSectionnnnnnnnnnnnnnnnnnnnnnn",heroSection);
     })
 
     const [exclusiveServicesSection, setExclusiveServicesSection] = useState({
-        headerText: 'Exclusive Services For Our International Patients',
+        headerText: '',
         leftColumn: [
-            'Providing one-to-one tele-consultation / video consultation with treating doctor',
-            'Medical visa assistance for patient & family',
-            'Dedicated international patient manager',
-            'Visa assistance',
-            'Complimentary airport pick and drop services',
-            'Complimentary local sim card for all patients staying over 7 days'
+            '',
+            '',
+            '',
+            '',
+            '',
+            ''
         ],
         rightColumn: [
-            'Appointment scheduling with OPD registration, inpatient admission, priority billing and discharge at RMH campus',
-            'Accommodation assistance',
-            'Foreign exchange assistance',
-            'Availability of translators / interpreters',
-            'Local city transportation for patient & family (day and night)',
-            'Special care for patient and executive / VIP rooms at RMH for international patients'
+            '',
+            '',
+            '',
+            '',
+            '',
+            ''
         ]
     })
+    console.log(exclusiveServicesSection.leftColumn, "exclusiveServicesSectionexclusiveServicesSectionexclusiveServicesSection");
+
 
     const [preDepartureSection, setPreDepartureSection] = useState({
-        headerText: 'Pre-Departure Services',
+        headerText: '',
         services: [
             { id: 1, title: '', image: null as File | null, imageFileName: '', imageMediaFileId: undefined as number | undefined },
             { id: 2, title: '', image: null as File | null, imageFileName: '', imageMediaFileId: undefined as number | undefined },
@@ -104,7 +112,7 @@ console.log("heroSectionnnnnnnnnnnnnnnnnnnnnnn",heroSection);
     })
 
     const [travelAccommodationSection, setTravelAccommodationSection] = useState({
-        headerText: 'Travel & Accommodation',
+        headerText: '',
         services: [
             { id: 1, title: '', image: null as File | null, imageFileName: '', imageMediaFileId: undefined as number | undefined },
             { id: 2, title: '', image: null as File | null, imageFileName: '', imageMediaFileId: undefined as number | undefined },
@@ -117,7 +125,7 @@ console.log("heroSectionnnnnnnnnnnnnnnnnnnnnnn",heroSection);
     })
 
     const [contactDetailsSection, setContactDetailsSection] = useState({
-        headerText: 'Contact Details',
+        headerText: '',
         contactPersons: [
             {
                 id: 1,
@@ -152,8 +160,8 @@ console.log("heroSectionnnnnnnnnnnnnnnnnnnnnnn",heroSection);
     })
 
     const [statisticsSection, setStatisticsSection] = useState({
-        headerText: 'Ramaiah Memorial Hospital, Bengaluru',
-        subHeader: 'International Patient Care',
+        headerText: '',
+        subHeader: '',
         boxes: [
             { id: 1, header: '', subHeader: '', icon: null as File | null, iconFileName: '', iconMediaFileId: undefined as number | undefined },
             { id: 2, header: '', subHeader: '', icon: null as File | null, iconFileName: '', iconMediaFileId: undefined as number | undefined },
@@ -172,18 +180,18 @@ console.log("heroSectionnnnnnnnnnnnnnnnnnnnnnn",heroSection);
         try {
             console.log('Calling API /home/sections/4 for International Patient Care')
             const response = await apiGetPageSections('4')
-            
+
             // Store the response data
             setApiResponseData(response)
             setShowApiLog(true)
-            
+
             // Log the response data
             console.log('=== API RESPONSE DATA FOR INTERNATIONAL PATIENT CARE ===')
             console.log('Page ID used: 4')
             console.log('Full Response:', response)
             console.log('Response Data:', response.data)
             console.log('====================================================')
-            
+
             // Show success notification
             toast.push(
                 <Notification type="success" duration={3000} title="API Call Successful">
@@ -191,10 +199,10 @@ console.log("heroSectionnnnnnnnnnnnnnnnnnnnnnn",heroSection);
                 </Notification>,
                 { placement: 'top-end' }
             )
-            
+
         } catch (error: any) {
             console.error('Error fetching page sections:', error)
-            
+
             // Show error notification
             const errorMessage = error?.data?.message || error?.message || 'Failed to fetch page sections data'
             toast.push(
@@ -215,21 +223,249 @@ console.log("heroSectionnnnnnnnnnnnnnnnnnnnnnn",heroSection);
             try {
                 console.log('Auto-fetching page sections data for International Patient Care (Page ID: 4)')
                 const response = await apiGetPageSections('4')
-                
+
                 if (response.data) {
                     setPageData(response.data)
                     console.log('Page sections data loaded:', response.data)
-                    
+
                     // Parse and set section data
-                    parseAndSetSectionData(response.data)
-                    
-                    // Show success notification
-                    // toast.push(
-                    //     <Notification type="success" duration={3000} title="Data Loaded">
-                    //         Page sections data loaded successfully
-                    //     </Notification>,
-                    //     { placement: 'top-end' }
-                    // )
+                    // parseAndSetSectionData(response.data)
+                    const sectionsPayload = response?.data
+                    const sectionsData = Array.isArray(sectionsPayload)
+                        ? sectionsPayload
+                        : (Array.isArray(sectionsPayload?.data) ? sectionsPayload.data : [])
+                    if (!Array.isArray(sectionsData)) {
+                        console.warn('Sections data is not an array:', sectionsPayload)
+                        return
+                    }
+                    const heroSectionData = sectionsData.find((section: any) => section.title === 'Hero')
+
+                    if (heroSectionData && heroSectionData.content_blocks) {
+                        const heroTextBlock = heroSectionData.content_blocks.find((block: any) =>
+                            block.block_type === 'text' && block.title
+                        )
+                        const heroImageBlock = heroSectionData.content_blocks.find((block: any) =>
+                            block.block_type === 'image' && block.media_files && block.media_files.length > 0
+                        )
+                        const heroBgImageBlock = heroSectionData.content_blocks.find((block: any) =>
+                            block.block_type === 'custom' && block.media_files && block.media_files.length > 0
+                        )
+
+                        if (heroTextBlock) {
+                            setHeroSection(prev => ({
+                                ...prev,
+                                headerText: heroTextBlock.title,
+                                descriptionText: 'Comprehensive international patient care services',
+                                heroImageFileName: heroImageBlock?.media_files?.[0]?.media_file?.original_filename || '',
+                                heroBgImageFileName: heroBgImageBlock?.media_files?.[0]?.media_file?.original_filename || ''
+                            }))
+                        }
+                    }
+
+                    const overviewSectionData = sectionsData.find((section: any) => section.section_type === 'overview')
+                    if (overviewSectionData && overviewSectionData.content_blocks) {
+                        const overviewContentTitle = overviewSectionData.content_blocks.find((block: any) => block.title)
+                        const overviewContentBlock = overviewSectionData.content_blocks.find((block: any) => block.content)
+                        const overviewImageBlock = overviewSectionData.content_blocks.find((block: any) =>
+                            block.block_type === 'image' && block.media_files && block.media_files.length > 0
+                        )
+                        console.log("overviewImageBlock", overviewImageBlock);
+
+                        if (overviewContentBlock || overviewContentTitle || overviewImageBlock) {
+                            const newOverview: OverviewSectionState = {
+                                headerText: overviewContentTitle?.title || '',
+                                overview: overviewContentBlock?.content || '',
+                                image: null,
+                                imageFileName: overviewImageBlock?.media_files?.[0]?.media_file?.original_filename || '',
+                                imageMediaFileId: overviewImageBlock?.media_files?.[0]?.media_file?.id
+                            }
+                            // Local state (to keep current form working)
+                            setOverviewSection(prev => ({
+                                ...prev,
+                                ...newOverview
+                            }))
+                            // Redux state (shared across pages)
+                            dispatch(setOverviewSectionRedux(newOverview))
+                        }
+                    }
+
+                    const whyChooseUsSectionData = sectionsData.find((section: any) => section.name === 'Why Choose RMH')
+                    console.log("whyChooseUsSectionDatas", whyChooseUsSectionData);
+                    if (whyChooseUsSectionData && whyChooseUsSectionData.content_blocks) {
+                        const whyChooseUsDataBlock = whyChooseUsSectionData.content_blocks.find((block: any) =>
+                            block.items && block.items.length > 0
+                        )
+
+                        console.log("whyChooseUsDataBlocksssss", whyChooseUsDataBlock);
+                        if (whyChooseUsSectionData.content_blocks) {
+                            const items = whyChooseUsSectionData.content_blocks.map((item: any, index: number) => ({
+                                id: item.id || index + 1,
+                                title: item.title || '',
+                                imageFileName: item?.media_files?.[0]?.media_file?.original_filename || ''
+                            }))
+
+                            console.log("items", items);
+
+                            setWhyChooseUsSection(prev => ({
+                                ...prev,
+                                headerText: whyChooseUsSectionData.title || '',
+                                items: items
+                            }))
+                        }
+                    }
+
+                    const exclusiveServicesSectionData = sectionsData.find((section: any) => section.name === 'Exclusive Services For Our International Patients')
+                    if (exclusiveServicesSectionData && exclusiveServicesSectionData.content_blocks) {
+                        const exclusiveServicesDataBlock = exclusiveServicesSectionData.content_blocks.find((block: any) =>
+                            block.leftColumn && block.rightColumn
+                        )
+                        console.log(exclusiveServicesSectionData, "exclusiveServicesSectionData");
+
+
+
+                        if (exclusiveServicesDataBlock || exclusiveServicesSectionData || exclusiveServicesSectionData.content_blocks) {
+                            const leftColumn = exclusiveServicesSectionData.content_blocks.map((item: any, index: number) => ({
+                                id: item.id || index + 1,
+                                title: item.title || '',
+                                // imageFileName: item?.media_files?.[0]?.media_file?.original_filename || ''
+                            }))
+                            console.log(exclusiveServicesSectionData.content_blocks, "leftColumn");
+
+                            setExclusiveServicesSection(prev => ({
+                                ...prev,
+                                headerText: exclusiveServicesSectionData.title || '',
+                                leftColumn: leftColumn,
+                                // rightColumn: exclusiveServicesDataBlock.rightColumn || []
+                            }))
+                        }
+                    }
+
+                    const preDepartureSectionData = sectionsData.find((section: any) => section.name === 'Pre-Departure Services')
+                    if (preDepartureSectionData && preDepartureSectionData.content_blocks) {
+                        // Find the header/title from the first text block or fall back to section title
+                        const headerBlock = preDepartureSectionData.content_blocks.find(
+                            (block: any) => block.block_type === 'text'
+                        )
+                        // All image blocks represent service items
+                        const serviceBlocks = preDepartureSectionData.content_blocks.filter(
+                            (block: any) => block.block_type === 'image'
+                        )
+                        const services = serviceBlocks.map((block: any, index: number) => ({
+                            id: block.id || index + 1,
+                            title: block.title || '',
+                            image: null as File | null,
+                            imageFileName: block.media_files?.[0]?.media_file?.original_filename || '',
+                            imageMediaFileId: block.media_files?.[0]?.media_file?.id
+                        }))
+                        setPreDepartureSection({
+                            headerText: headerBlock?.title || preDepartureSectionData.title || '',
+                            services
+                        })
+                    }
+                    const travelAccommodationSectionData = sectionsData.find(
+                        (section: any) => section.name === "Travel & Accommodation"
+                      );
+                      
+                      if (travelAccommodationSectionData && travelAccommodationSectionData.content_blocks?.length > 0) {
+                        const services = travelAccommodationSectionData.content_blocks.map(
+                          (block: any, index: number) => ({
+                            id: block.id || index + 1,
+                            title: block.title || "",
+                            image: null as File | null,
+                            imageFileName:
+                              block?.media_files?.[0]?.media_file?.original_filename || "",
+                            imageMediaFileId: block?.media_files?.[0]?.media_file?.id as
+                              | number
+                              | undefined,
+                          })
+                        );
+                      
+                        setTravelAccommodationSection((prev) => ({
+                          ...prev,
+                          headerText: travelAccommodationSectionData.title || "",
+                          services: services,
+                        }));
+                      }
+                      
+
+                      const contactDetailsSectionData = sectionsData.find(
+                        (section: any) => section.name === "Contact Details"
+                      );
+                      
+                      if (contactDetailsSectionData && contactDetailsSectionData.content_blocks?.length > 0) {
+                        const contactPersons = contactDetailsSectionData.content_blocks.map(
+                          (block: any, index: number) => {
+                            // Extract phone & email from statistics array
+                            let phone = "";
+                            let email = "";
+                      
+                            if (Array.isArray(block.statistics) && block.statistics.length > 0) {
+                              block.statistics.forEach((stat: any) => {
+                                if (stat.statistic_text?.includes("@")) {
+                                  email = stat.statistic_text;
+                                } else if (stat.statistic_text?.match(/^[+0-9\s-]+$/)) {
+                                  phone = stat.statistic_text;
+                                }
+                              });
+                            }
+                      
+                            return {
+                              id: block.id || index + 1,
+                              name: block.title || "",
+                              title: block.content || "",
+                              phone,
+                              email,
+                              image: null as File | null,
+                              imageFileName:
+                                block?.media_files?.[0]?.media_file?.original_filename || "",
+                              imageMediaFileId: block?.media_files?.[0]?.media_file?.id as
+                                | number
+                                | undefined,
+                            };
+                          }
+                        );
+                      
+                        setContactDetailsSection((prev) => ({
+                          ...prev,
+                          headerText: contactDetailsSectionData.title || "Contact Details",
+                          contactPersons,
+                        }));
+                      }
+                      
+                      
+
+                      const ramaiahStatsSection = sectionsData.find(
+                        (section: any) => section.name === "Ramaiah Memorial Hospital, Bengaluru"
+                      );
+                      
+                      if (ramaiahStatsSection && ramaiahStatsSection.content_blocks?.length > 0) {
+                        const block = ramaiahStatsSection.content_blocks[0];
+                      
+                        // Set Header Text and Sub Header Text
+                        const headerText = block.title || ramaiahStatsSection.title || '';
+                        const subHeaderText = block.content || ramaiahStatsSection.subtitle || '';
+                      
+                        // Map statistics into boxes
+                        const boxes = block.statistics?.slice(0, 8).map((stat: any, index: number) => ({
+                          id: stat.id || index + 1,
+                          header: stat.number || stat.statistic_text || '',        // main number
+                          subHeader: stat.label || '',      // label
+                          suffix: stat.suffix || '',        // optional
+                          icon: null as File | null,
+                          iconFileName: stat.statistics_image?.split('/').pop() || '',
+                          iconMediaUrl: stat.statistics_image || '',
+                        }));
+                      
+                        // Set everything into state
+                        setStatisticsSection((prev: any) => ({
+                          ...prev,
+                          headerText,
+                          subHeader: subHeaderText,
+                          boxes: boxes || [],
+                        }));
+                      }
+                      
+
                 }
             } catch (error: any) {
                 console.error('Error fetching page sections:', error)
@@ -255,242 +491,42 @@ console.log("heroSectionnnnnnnnnnnnnnnnnnnnnnn",heroSection);
                 console.log('No valid sections data found')
                 return
             }
-
+            console.log("sectionsData", sectionsData);
             console.log('📝 Section Names:', sectionsData.map((section: any) => section.name))
             sectionsData.forEach((section: any, index: number) => {
                 console.log(`   Section ${index + 1}: ${section.name} (ID: ${section.id})`)
             })
 
-            // Parse Hero Section
-            const heroSectionData = sectionsData.find((section: any) => section.title === 'Hero')
-            
-            if (heroSectionData && heroSectionData.content_blocks) {
-                const heroTextBlock = heroSectionData.content_blocks.find((block: any) => 
-                    block.block_type === 'text' && block.title
-                )
-                const heroImageBlock = heroSectionData.content_blocks.find((block: any) => 
-                    block.block_type === 'image' && block.media_files && block.media_files.length > 0
-                )
-                const heroBgImageBlock = heroSectionData.content_blocks.find((block: any) => 
-                    block.block_type === 'custom' && block.media_files && block.media_files.length > 0
-                )
-
-                if (heroTextBlock) {
-                    setHeroSection(prev => ({
-                        ...prev,
-                        headerText: heroTextBlock.title,
-                        descriptionText: 'Comprehensive international patient care services',
-                        heroImageFileName: heroImageBlock?.media_files?.[0]?.media_file?.original_filename || '',
-                        heroBgImageFileName: heroBgImageBlock?.media_files?.[0]?.media_file?.original_filename || ''
-                    }))
-                }
-            }
-
-            // Parse Overview Section
-            const overviewSectionData = sectionsData.find((section: any) => section.name === 'overview')
-            if (overviewSectionData && overviewSectionData.content_blocks) {
-                const overviewContentTitle = overviewSectionData.content_blocks.find((block: any) => block.title)
-                const overviewContentBlock = overviewSectionData.content_blocks.find((block: any) => block.content)
-                const overviewImageBlock = overviewSectionData.content_blocks.find((block: any) => 
-                    block.block_type === 'image' && block.media_files && block.media_files.length > 0
-                )
-
-                if (overviewContentBlock || overviewContentTitle) {
-                    setOverviewSection(prev => ({
-                        ...prev,
-                        headerText: overviewContentTitle?.title || '',
-                        overview: overviewContentBlock?.content || '',
-                        imageFileName: overviewImageBlock?.media_files?.[0]?.media_file?.original_filename || '',
-                        imageMediaFileId: overviewImageBlock?.media_files?.[0]?.media_file?.id
-                    }))
-                }
-            }
-
-            // Parse Services Section
-            const servicesSectionData = sectionsData.find((section: any) => section.name === 'our specialities' || section.name === 'services')
-            if (servicesSectionData && servicesSectionData.content_blocks) {
-                const servicesDataBlock = servicesSectionData.content_blocks.find((block: any) => 
-                    block.specialties && block.specialties.length > 0
-                )
-
-                if (servicesDataBlock?.specialties) {
-                    const courses = servicesDataBlock.specialties.map((specialty: any, index: number) => ({
-                        id: specialty.id || index + 1,
-                        text: specialty.name || '',
-                        link: ''
-                    }))
-
-                    setCoursesSection(prev => ({
-                        ...prev,
-                        headerText: 'Our Services',
-                        courses: courses
-                    }))
-                }
-            }
-
-            // Parse Services & Facilities Section
-            const facilitiesSectionData = sectionsData.find((section: any) => section.name === 'service & facilities')
-            if (facilitiesSectionData && facilitiesSectionData.content_blocks) {
-                const facilitiesDataBlock = facilitiesSectionData.content_blocks.find((block: any) => 
-                    block.facilitySpecialties && block.facilitySpecialties.length > 0
-                )
-
-                if (facilitiesDataBlock?.facilitySpecialties) {
-                    const services = facilitiesDataBlock.facilitySpecialties.map((facilitySpecialty: any, index: number) => ({
-                        id: facilitySpecialty.id || index + 1,
-                        text: facilitySpecialty.facility?.name || ''
-                    }))
-
-                    setServicesFacilitiesSection(prev => ({
-                        ...prev,
-                        headerText: 'Services & Facilities',
-                        services: services
-                    }))
-                }
-            }
-
-            // Parse Why Choose Us Section
-            const whyChooseUsSectionData = sectionsData.find((section: any) => section.name === 'why choose us' || section.name === 'why choose rnh')
-            if (whyChooseUsSectionData && whyChooseUsSectionData.content_blocks) {
-                const whyChooseUsDataBlock = whyChooseUsSectionData.content_blocks.find((block: any) => 
-                    block.items && block.items.length > 0
-                )
-
-                if (whyChooseUsDataBlock?.items) {
-                    const items = whyChooseUsDataBlock.items.slice(0, 4).map((item: any, index: number) => ({
-                        id: item.id || index + 1,
-                        title: item.title || '',
-                        image: null as File | null,
-                        imageFileName: item?.image?.original_filename || '',
-                        imageMediaFileId: item?.image?.id as number | undefined
-                    }))
-
-                    setWhyChooseUsSection(prev => ({
-                        ...prev,
-                        headerText: whyChooseUsSectionData.title || 'Why Choose RMH',
-                        items: items
-                    }))
-                }
-            }
-
-            // Parse Exclusive Services Section
-            const exclusiveServicesSectionData = sectionsData.find((section: any) => section.name === 'exclusive services')
-            if (exclusiveServicesSectionData && exclusiveServicesSectionData.content_blocks) {
-                const exclusiveServicesDataBlock = exclusiveServicesSectionData.content_blocks.find((block: any) => 
-                    block.leftColumn && block.rightColumn
-                )
-
-                if (exclusiveServicesDataBlock) {
-                    setExclusiveServicesSection(prev => ({
-                        ...prev,
-                        headerText: exclusiveServicesSectionData.title || 'Exclusive Services For Our International Patients',
-                        leftColumn: exclusiveServicesDataBlock.leftColumn || [],
-                        rightColumn: exclusiveServicesDataBlock.rightColumn || []
-                    }))
-                }
-            }
-
-            // Parse Pre-Departure Services Section
-            const preDepartureSectionData = sectionsData.find((section: any) => section.name === 'pre-departure services')
-            if (preDepartureSectionData && preDepartureSectionData.content_blocks) {
-                const preDepartureDataBlock = preDepartureSectionData.content_blocks.find((block: any) => 
-                    block.services && block.services.length > 0
-                )
-
-                if (preDepartureDataBlock?.services) {
-                    const services = preDepartureDataBlock.services.slice(0, 5).map((service: any, index: number) => ({
-                        id: service.id || index + 1,
-                        title: service.title || '',
-                        image: null as File | null,
-                        imageFileName: service?.image?.original_filename || '',
-                        imageMediaFileId: service?.image?.id as number | undefined
-                    }))
-
-                    setPreDepartureSection(prev => ({
-                        ...prev,
-                        headerText: preDepartureSectionData.title || 'Pre-Departure Services',
-                        services: services
-                    }))
-                }
-            }
-
-            // Parse Travel & Accommodation Section
-            const travelAccommodationSectionData = sectionsData.find((section: any) => section.name === 'travel & accommodation')
-            if (travelAccommodationSectionData && travelAccommodationSectionData.content_blocks) {
-                const travelAccommodationDataBlock = travelAccommodationSectionData.content_blocks.find((block: any) => 
-                    block.services && block.services.length > 0
-                )
-
-                if (travelAccommodationDataBlock?.services) {
-                    const services = travelAccommodationDataBlock.services.map((service: any, index: number) => ({
-                        id: service.id || index + 1,
-                        title: service.title || '',
-                        image: null as File | null,
-                        imageFileName: service?.image?.original_filename || '',
-                        imageMediaFileId: service?.image?.id as number | undefined
-                    }))
-
-                    setTravelAccommodationSection(prev => ({
-                        ...prev,
-                        headerText: travelAccommodationSectionData.title || 'Travel & Accommodation',
-                        services: services
-                    }))
-                }
-            }
-
-            // Parse Contact Details Section
-            const contactDetailsSectionData = sectionsData.find((section: any) => section.name === 'contact details')
-            if (contactDetailsSectionData && contactDetailsSectionData.content_blocks) {
-                const contactDetailsDataBlock = contactDetailsSectionData.content_blocks.find((block: any) => 
-                    block.contactPersons && block.contactPersons.length > 0
-                )
-
-                if (contactDetailsDataBlock?.contactPersons) {
-                    const contactPersons = contactDetailsDataBlock.contactPersons.map((person: any, index: number) => ({
-                        id: person.id || index + 1,
-                        name: person.name || '',
-                        title: person.title || '',
-                        phone: person.phone || '',
-                        email: person.email || '',
-                        image: null as File | null,
-                        imageFileName: person?.image?.original_filename || '',
-                        imageMediaFileId: person?.image?.id as number | undefined
-                    }))
-
-                    setContactDetailsSection(prev => ({
-                        ...prev,
-                        headerText: contactDetailsSectionData.title || 'Contact Details',
-                        contactPersons: contactPersons
-                    }))
-                }
-            }
-
+        
             // Parse Statistics Section
-            const statisticsSectionData = sectionsData.find((section: any) => section.name === 'statistics' || section.name === 'hospital stats')
-            if (statisticsSectionData && statisticsSectionData.content_blocks) {
-                const statisticsDataBlock = statisticsSectionData.content_blocks.find((block: any) => 
-                    (block.stats && block.stats.length > 0) || (block.boxes && block.boxes.length > 0)
-                )
-
-                if (statisticsDataBlock?.boxes || statisticsDataBlock?.stats) {
-                    const source = statisticsDataBlock.boxes || statisticsDataBlock.stats
-                    const boxes = source.slice(0, 8).map((item: any, index: number) => ({
-                        id: item.id || index + 1,
-                        header: item.header || item.value || '',
-                        subHeader: item.subHeader || item.label || '',
-                        icon: null as File | null,
-                        iconFileName: item?.icon?.original_filename || '',
-                        iconMediaFileId: item?.icon?.id as number | undefined
-                    }))
-
-                    setStatisticsSection(prev => ({
-                        ...prev,
-                        headerText: statisticsSectionData.title || 'Ramaiah Memorial Hospital, Bengaluru',
-                        subHeader: statisticsSectionData.subtitle || 'International Patient Care',
-                        boxes
-                    }))
-                }
-            }
+            const ramaiahStatsSection = sectionsData.find(
+                (section: any) => section.name === "Ramaiah Memorial Hospital, Bengaluru"
+              );
+              
+              if (ramaiahStatsSection && ramaiahStatsSection.content_blocks?.length > 0) {
+                const block = ramaiahStatsSection.content_blocks[0];
+              
+                // Map statistics array into boxes (like hospital stats)
+                const boxes = block.statistics?.slice(0, 8).map((stat: any, index: number) => ({
+                  id: stat.id || index + 1,
+                  header: stat.number || '', // main number value
+                  subHeader: stat.label || '', // label text e.g. "Beds"
+                  suffix: stat.suffix || '', // e.g. "+"
+                  icon: null as File | null,
+                  iconFileName:
+                    stat.statistics_image?.split('/').pop() || '', // extract image name
+                  iconMediaUrl: stat.statistics_image || '', // full image URL
+                }));
+              
+                // Set state for the section
+                setStatisticsSection((prev: any) => ({
+                  ...prev,
+                  headerText: ramaiahStatsSection.title || 'Ramaiah Memorial Hospital, Bengaluru',
+                  subHeader: ramaiahStatsSection.subtitle || '',
+                  boxes: boxes || [],
+                }));
+              }
+              
 
         } catch (error) {
             console.error('Error parsing section data:', error)
@@ -645,11 +681,11 @@ console.log("heroSectionnnnnnnnnnnnnnnnnnnnnnn",heroSection);
                     const updatedItems = whyChooseUsSection.items.map((itm, idx) =>
                         idx === itemIndex
                             ? {
-                                  ...itm,
-                                  image: file,
-                                  imageFileName: responseData.savedMedia.original_filename,
-                                  imageMediaFileId: responseData.savedMedia.id,
-                              }
+                                ...itm,
+                                image: file,
+                                imageFileName: responseData.savedMedia.original_filename,
+                                imageMediaFileId: responseData.savedMedia.id,
+                            }
                             : itm
                     )
                     setWhyChooseUsSection({ ...whyChooseUsSection, items: updatedItems })
@@ -696,11 +732,11 @@ console.log("heroSectionnnnnnnnnnnnnnnnnnnnnnn",heroSection);
                     const updated = preDepartureSection.services.map((itm, idx) =>
                         idx === itemIndex
                             ? {
-                                  ...itm,
-                                  image: file,
-                                  imageFileName: responseData.savedMedia.original_filename,
-                                  imageMediaFileId: responseData.savedMedia.id,
-                              }
+                                ...itm,
+                                image: file,
+                                imageFileName: responseData.savedMedia.original_filename,
+                                imageMediaFileId: responseData.savedMedia.id,
+                            }
                             : itm
                     )
                     setPreDepartureSection({ ...preDepartureSection, services: updated })
@@ -747,11 +783,11 @@ console.log("heroSectionnnnnnnnnnnnnnnnnnnnnnn",heroSection);
                     const updated = travelAccommodationSection.services.map((itm, idx) =>
                         idx === itemIndex
                             ? {
-                                  ...itm,
-                                  image: file,
-                                  imageFileName: responseData.savedMedia.original_filename,
-                                  imageMediaFileId: responseData.savedMedia.id,
-                              }
+                                ...itm,
+                                image: file,
+                                imageFileName: responseData.savedMedia.original_filename,
+                                imageMediaFileId: responseData.savedMedia.id,
+                            }
                             : itm
                     )
                     setTravelAccommodationSection({ ...travelAccommodationSection, services: updated })
@@ -798,11 +834,11 @@ console.log("heroSectionnnnnnnnnnnnnnnnnnnnnnn",heroSection);
                     const updated = statisticsSection.boxes.map((b, idx) =>
                         idx === boxIndex
                             ? {
-                                  ...b,
-                                  icon: file,
-                                  iconFileName: responseData.savedMedia.original_filename,
-                                  iconMediaFileId: responseData.savedMedia.id,
-                              }
+                                ...b,
+                                icon: file,
+                                iconFileName: responseData.savedMedia.original_filename,
+                                iconMediaFileId: responseData.savedMedia.id,
+                            }
                             : b
                     )
                     setStatisticsSection({ ...statisticsSection, boxes: updated })
@@ -849,11 +885,11 @@ console.log("heroSectionnnnnnnnnnnnnnnnnnnnnnn",heroSection);
                     const updated = contactDetailsSection.contactPersons.map((p, idx) =>
                         idx === personIndex
                             ? {
-                                  ...p,
-                                  image: file,
-                                  imageFileName: responseData.savedMedia.original_filename,
-                                  imageMediaFileId: responseData.savedMedia.id,
-                              }
+                                ...p,
+                                image: file,
+                                imageFileName: responseData.savedMedia.original_filename,
+                                imageMediaFileId: responseData.savedMedia.id,
+                            }
                             : p
                     )
                     setContactDetailsSection({ ...contactDetailsSection, contactPersons: updated })
@@ -932,13 +968,13 @@ console.log("heroSectionnnnnnnnnnnnnnnnnnnnnnn",heroSection);
                             <HiXMark className="w-5 h-5" />
                         </button>
                     </div>
-                    
+
                     <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
                         <pre className="text-sm text-gray-700 whitespace-pre-wrap">
                             {JSON.stringify(apiResponseData, null, 2)}
                         </pre>
                     </div>
-                    
+
                     <div className="mt-4 text-sm text-gray-500">
                         <p><strong>API Endpoint:</strong> /home/sections/4</p>
                         <p><strong>Status:</strong> {apiResponseData?.status || 'N/A'}</p>
@@ -1058,9 +1094,9 @@ console.log("heroSectionnnnnnnnnnnnnnnnnnnnnnn",heroSection);
                             toolbar: [
                                 [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
                                 ['bold', 'italic', 'underline', 'strike'],
-                                [{ 'color': ['#305FC2','#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#00ADEF', '#D60F8C'] }, { 'background': ['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#00ADEF', '#D60F8C'] }],
-                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                                [{ 'indent': '-1'}, { 'indent': '+1' }],
+                                [{ 'color': ['#305FC2', '#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#00ADEF', '#D60F8C'] }, { 'background': ['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#00ADEF', '#D60F8C'] }],
+                                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                                [{ 'indent': '-1' }, { 'indent': '+1' }],
                                 [{ 'align': [] }],
                                 ['link', 'image'],
                                 ['clean']
@@ -1085,7 +1121,7 @@ console.log("heroSectionnnnnnnnnnnnnnnnnnnnnnn",heroSection);
                     <div className="flex items-center gap-3">
                         <input
                             type="text"
-                            value={overviewSection.imageFileName}
+                            value={overviewSectionFromRedux.imageFileName || ''}
                             readOnly
                             className="flex-1 px-4 py-3 border border-gray-300 rounded-[24px] bg-white text-gray-700"
                         />
@@ -1233,7 +1269,7 @@ console.log("heroSectionnnnnnnnnnnnnnnnnnnnnnn",heroSection);
                                 <div key={index} className="flex items-center gap-3">
                                     <input
                                         type="text"
-                                        value={service}
+                                        value={service.title}
                                         onChange={(e) => {
                                             const updatedLeftColumn = [...exclusiveServicesSection.leftColumn]
                                             updatedLeftColumn[index] = e.target.value
@@ -1246,7 +1282,7 @@ console.log("heroSectionnnnnnnnnnnnnnnnnnnnnnn",heroSection);
                             ))}
                         </div>
                     </div>
-                    <div>
+                    {/* <div>
                         <div className="space-y-3 mt-3">
                             {exclusiveServicesSection.rightColumn.map((service, index) => (
                                 <div key={index} className="flex items-center gap-3">
@@ -1264,7 +1300,7 @@ console.log("heroSectionnnnnnnnnnnnnnnnnnnnnnn",heroSection);
                                 </div>
                             ))}
                         </div>
-                    </div>
+                    </div> */}
                 </div>
 
                 <div className="flex justify-end mt-6">
@@ -1555,7 +1591,7 @@ console.log("heroSectionnnnnnnnnnnnnnnnnnnnnnn",heroSection);
                             ))}
                         </div>
                     </div>
-                
+
                 </div>
 
                 <div className="flex justify-end mt-6">
