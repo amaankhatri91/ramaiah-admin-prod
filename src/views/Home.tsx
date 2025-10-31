@@ -1,4 +1,5 @@
 import HeroSection from '@/components/template/HeroSection'
+import PageSettingsSection from '@/components/template/PageSettingsSection'
 import QuickLinksSection from '@/components/template/QuickLinksSection'
 import MiddleSection from '@/components/template/MiddleSection'
 import DoctorSpeakSection from '@/components/template/DoctorSpeakSection'
@@ -12,6 +13,7 @@ const Home = () => {
 
     return (
         <div className="flex flex-col gap-4">
+            <PageSettingsSection />
             <HeroSection />
             <QuickLinksSection />
             {/* <SpecialistSection /> */}
