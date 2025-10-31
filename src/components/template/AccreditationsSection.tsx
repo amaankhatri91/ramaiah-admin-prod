@@ -53,7 +53,9 @@ const AccreditationsSection = () => {
 
     // Store initial values when data is loaded
     useEffect(() => {
-        if (homeData?.data && !initialFormValues) {
+        // homeData.data is now the content_blocks array (extracted in API slice)
+        const contentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
+        if (contentBlocks && contentBlocks.length > 0 && !initialFormValues) {
             const initialValues = getInitialValues()
             setInitialFormValues(initialValues)
             console.log('Initial accreditations form values stored:', initialValues)
@@ -68,7 +70,10 @@ const AccreditationsSection = () => {
     }
 
     const getInitialValues = (): AccreditationsFormSchema => {
-        if (!homeData?.data) {
+        // homeData.data is now the content_blocks array (extracted in API slice)
+        const contentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
+        
+        if (!contentBlocks || contentBlocks.length === 0) {
             return {
                 headerText: 'Our Accreditations & Certifications',
                 headerTextHeadingLevel: 'h1',
@@ -82,15 +87,15 @@ const AccreditationsSection = () => {
         }
         
         // Parse the data based on block types
-        const accreditationBlocks = homeData.data.filter(block => block.section_id === 5)
+        const accreditationBlocks = contentBlocks.filter((block: ContentBlock) => block.section_id === 5)
         
         // Get header text from text block type
-        const textBlock = accreditationBlocks.find(block => block.block_type === 'text')
+        const textBlock = accreditationBlocks.find((block: ContentBlock) => block.block_type === 'text')
         const headerText = textBlock?.content || textBlock?.title || 'Our Accreditations & Certifications'
         const headerTextHeadingLevel = getHeadingLevel(textBlock, 'h1')
         
         // Get certificates from image block type
-        const imageBlocks = accreditationBlocks.filter(block => block.block_type === 'image')
+        const imageBlocks = accreditationBlocks.filter((block: ContentBlock) => block.block_type === 'image')
         const certificates = imageBlocks.length > 0 ? imageBlocks.map((block, index) => ({
             id: block.id.toString(),
             name: block.title,
@@ -196,8 +201,11 @@ const AccreditationsSection = () => {
 
     const onSubmit = async (values: AccreditationsFormSchema) => {
         try {
+            // homeData.data is now the content_blocks array (extracted in API slice)
+            const allContentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
+            
             // Get the current accreditations section data to build the update structure
-            const accreditationBlocks = homeData?.data?.filter(block => block.section_id === 5) || []
+            const accreditationBlocks = allContentBlocks.filter((block: ContentBlock) => block.section_id === 5) || []
             
             // Get initial values to compare changes
             if (!initialFormValues) {
@@ -243,7 +251,7 @@ const AccreditationsSection = () => {
                 })
                 
                 // Find existing text block or create new one
-                const existingTextBlock = accreditationBlocks.find(block => block.block_type === 'text')
+                const existingTextBlock = accreditationBlocks.find((block: ContentBlock) => block.block_type === 'text')
                 
                 // Build custom_css with heading level, preserving existing custom_css if any
                 let customCss = existingTextBlock?.custom_css || ''
@@ -302,7 +310,7 @@ const AccreditationsSection = () => {
                     
                     if (hasChanges) {
                         // Find existing image block for this certificate by ID (titles may repeat like "JCI")
-                        const existingBlock = accreditationBlocks.find(block => 
+                        const existingBlock = accreditationBlocks.find((block: ContentBlock) => 
                             block.block_type === 'image' && 
                             String(block.id) === certificate.id
                         )

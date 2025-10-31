@@ -59,7 +59,9 @@ const OurStorySection = () => {
 
     // Store initial values when data is loaded
     useEffect(() => {
-        if (homeData?.data && !initialFormValues) {
+        // homeData.data is now the content_blocks array (extracted in API slice)
+        const contentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
+        if (contentBlocks && contentBlocks.length > 0 && !initialFormValues) {
             const initialValues = getInitialValues()
             setInitialFormValues(initialValues)
             console.log('Initial form values stored:', initialValues)
@@ -88,7 +90,10 @@ const OurStorySection = () => {
     }
 
     const getInitialValues = (): OurStoryFormSchema => {
-        if (!homeData?.data) {
+        // homeData.data is now the content_blocks array (extracted in API slice)
+        const contentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
+        
+        if (!contentBlocks || contentBlocks.length === 0) {
             return {
                 headerText: "Our Story",
                 headerTextHeadingLevel: 'h1',
@@ -106,23 +111,23 @@ const OurStorySection = () => {
         }
         
         // Parse the data based on block types
-        const storyBlocks = homeData.data.filter(block => block.section_id === 4)
+        const storyBlocks = contentBlocks.filter((block: ContentBlock) => block.section_id === 4)
         
         // Get header text from text block type
-        const textBlock = storyBlocks.find(block => block.block_type === 'text')
+        const textBlock = storyBlocks.find((block: ContentBlock) => block.block_type === 'text')
         const headerText = textBlock?.content || textBlock?.title || "Our Story"
         const headerTextHeadingLevel = getHeadingLevel(textBlock, 'h1')
         
         // Get story boxes from statistic block type
-        const statisticBlocks = storyBlocks.filter(block => block.block_type === 'statistic')
-        const storyBoxes = statisticBlocks.map((block, index) => ({
+        const statisticBlocks = storyBlocks.filter((block: ContentBlock) => block.block_type === 'statistic')
+        const storyBoxes: StoryBox[] = statisticBlocks.map((block, index) => ({
             id: (index + 1).toString(),
-            header: block.statistics?.[0]?.statistic_value || block.content || '550+',
+            header: block.statistics?.[0]?.number || block.content || '550+',
             headerHeadingLevel: getHeaderHeadingLevel(block, 'h2'),
             subHeader: block.statistics?.[0]?.statistic_text || 'Beds',
             subHeaderHeadingLevel: getSubHeaderHeadingLevel(block, 'h3'),
             icon: block.media_files?.[0]?.media_file?.original_filename || 'icon_01.svg',
-            mediaFileId: block.media_files?.[0]?.media_file_id
+            mediaFileId: block.media_files?.[0]?.media_file?.id
         }))
         
         // Ensure we have 7 boxes
@@ -134,7 +139,7 @@ const OurStorySection = () => {
                 subHeader: 'Beds',
                 subHeaderHeadingLevel: 'h3',
                 icon: 'icon_01.svg'
-            })
+            } as StoryBox)
         }
         
         return {
@@ -230,8 +235,11 @@ const OurStorySection = () => {
 
     const onSubmit = async (values: OurStoryFormSchema) => {
         try {
+            // homeData.data is now the content_blocks array (extracted in API slice)
+            const allContentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
+            
             // Get the current Our Story section data to build the update structure
-            const storyBlocks = homeData?.data?.filter(block => block.section_id === 4) || []
+            const storyBlocks = allContentBlocks.filter((block: ContentBlock) => block.section_id === 4) || []
             
             // Get initial values to compare changes
             if (!initialFormValues) {
@@ -246,8 +254,8 @@ const OurStorySection = () => {
             const initialValues = initialFormValues
             
             // Find existing content blocks by block type
-            const headerBlock = storyBlocks.find(block => block.block_type === 'text')
-            const statisticBlocks = storyBlocks.filter(block => block.block_type === 'statistic')
+            const headerBlock = storyBlocks.find((block: ContentBlock) => block.block_type === 'text')
+            const statisticBlocks = storyBlocks.filter((block: ContentBlock) => block.block_type === 'statistic')
             
             // Build content blocks array - only include changed blocks
             const contentBlocks: any[] = []

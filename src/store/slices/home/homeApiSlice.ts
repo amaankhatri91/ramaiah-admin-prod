@@ -9,10 +9,14 @@ export const homeApiSlice = RtkQueryService.injectEndpoints({
                 method: 'GET',
             }),
             transformResponse: (response: any) => {
+                // Extract content_blocks from nested data structure
+                // Support both old format (response.data is array) and new format (response.data.content_blocks)
+                const contentBlocks = response.data?.content_blocks || (Array.isArray(response.data) ? response.data : [])
+                
                 return {
                     status: response.status || 1,
                     message: response.message || 'Home data fetched successfully',
-                    data: response.data || [],
+                    data: contentBlocks,
                 }
             },
             transformErrorResponse: (response: any) => {

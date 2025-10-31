@@ -50,7 +50,9 @@ const QuickLinksSection = () => {
 
     // Store initial values when data is loaded
     useEffect(() => {
-        if (homeData?.data && !initialFormValues) {
+        // homeData.data is now the content_blocks array (extracted in API slice)
+        const contentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
+        if (contentBlocks && contentBlocks.length > 0 && !initialFormValues) {
             const initialValues = getInitialValues()
             setInitialFormValues(initialValues)
             console.log('Initial form values stored:', initialValues)
@@ -58,6 +60,9 @@ const QuickLinksSection = () => {
     }, [homeData, initialFormValues])
 
     const getInitialValues = (): QuickLinksFormSchema => {
+        // homeData.data is now the content_blocks array (extracted in API slice)
+        const contentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
+        
         // Helper function to parse heading level from custom_css
         const getHeadingLevel = (block: ContentBlock | undefined, defaultValue: string): string => {
             if (!block?.custom_css) return defaultValue
@@ -65,7 +70,7 @@ const QuickLinksSection = () => {
             return match ? match[1].toLowerCase() : defaultValue
         }
 
-        if (!homeData?.data) {
+        if (!contentBlocks || contentBlocks.length === 0) {
             return {
                 quickLinks: [
                     { id: '1', name: 'Book OPD Appointments (9 am - 5 pm)', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' },
@@ -78,8 +83,8 @@ const QuickLinksSection = () => {
             }
         }
         
-        const quickLinkBlocks = homeData.data.filter((block: any) => block.section_id === 2) || []
-        const quickLinksData = parseQuickLinksSection(homeData.data)
+        const quickLinkBlocks = contentBlocks.filter((block: ContentBlock) => block.section_id === 2) || []
+        const quickLinksData = parseQuickLinksSection(contentBlocks)
         
         // Map quick links with heading levels from blocks
         const quickLinksWithHeadingLevels = quickLinksData.map((link, index) => {
@@ -183,8 +188,11 @@ const QuickLinksSection = () => {
 
     const onSubmit = async (values: QuickLinksFormSchema) => {
         try {
+            // homeData.data is now the content_blocks array (extracted in API slice)
+            const allContentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
+            
             // Get the current quick links section data to build the update structure
-            const quickLinkBlocks = homeData?.data?.filter((block: any) => block.section_id === 2) || []
+            const quickLinkBlocks = allContentBlocks.filter((block: ContentBlock) => block.section_id === 2) || []
             
             // Get initial values to compare changes
             if (!initialFormValues) {

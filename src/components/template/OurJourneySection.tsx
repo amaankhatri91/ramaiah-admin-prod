@@ -43,7 +43,9 @@ const OurJourneySection = () => {
 
     // Store initial values when data is loaded
     useEffect(() => {
-        if (homeData?.data) {
+        // homeData.data is now the content_blocks array (extracted in API slice)
+        const contentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
+        if (contentBlocks && contentBlocks.length > 0) {
             const initialValues = getInitialValues()
             setInitialFormValues(initialValues)
             console.log('Initial form values stored:', initialValues)
@@ -58,7 +60,10 @@ const OurJourneySection = () => {
     }
 
     const getInitialValues = (): OurJourneyFormSchema => {
-        if (!homeData?.data) {
+        // homeData.data is now the content_blocks array (extracted in API slice)
+        const contentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
+        
+        if (!contentBlocks || contentBlocks.length === 0) {
             console.log('No home data available for initial values')
             return {
                 headerText: "",
@@ -70,12 +75,12 @@ const OurJourneySection = () => {
         }
         
         // Get journey blocks and find the title block
-        const journeyContentBlocks = homeData.data.filter(block => block.section_id === 7)
+        const journeyContentBlocks = contentBlocks.filter((block: ContentBlock) => block.section_id === 7)
         const sortedBlocks = journeyContentBlocks.sort((a, b) => a.display_order - b.display_order)
-        const titleBlock = sortedBlocks.find(block => block.display_order === 1 && block.block_type === 'text')
+        const titleBlock = sortedBlocks.find((block: ContentBlock) => block.display_order === 1 && block.block_type === 'text')
         
-        // console.log('Raw home data for Our Journey:', homeData.data)
-        const journeyData = parseOurJourneySection(homeData.data)
+        // console.log('Raw home data for Our Journey:', contentBlocks)
+        const journeyData = parseOurJourneySection(contentBlocks)
     
         
         const initialValues = {
@@ -153,8 +158,11 @@ const OurJourneySection = () => {
             console.log('Form values:', values)
             console.log('Initial form values:', initialFormValues)
             
+            // homeData.data is now the content_blocks array (extracted in API slice)
+            const allContentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
+            
             // Get the current our journey section data to build the update structure
-            const journeyContentBlocks = homeData?.data?.filter(block => block.section_id === 7) || []
+            const journeyContentBlocks = allContentBlocks.filter((block: ContentBlock) => block.section_id === 7) || []
             console.log('Journey content blocks:', journeyContentBlocks)
             
             // Sort by display_order to ensure correct order
@@ -162,9 +170,9 @@ const OurJourneySection = () => {
             console.log('Sorted blocks:', sortedBlocks)
             
             // Find existing content blocks based on the new structure
-            const titleBlock = sortedBlocks.find(block => block.display_order === 1 && block.block_type === 'text')
-            const contentBlock = sortedBlocks.find(block => block.display_order === 2 && block.content)
-            const imageBlock = sortedBlocks.find(block => block.display_order === 3 && block.block_type === 'image')
+            const titleBlock = sortedBlocks.find((block: ContentBlock) => block.display_order === 1 && block.block_type === 'text')
+            const contentBlock = sortedBlocks.find((block: ContentBlock) => block.display_order === 2 && block.content)
+            const imageBlock = sortedBlocks.find((block: ContentBlock) => block.display_order === 3 && block.block_type === 'image')
             
             console.log('Found blocks:', {
                 titleBlock,
@@ -185,8 +193,8 @@ const OurJourneySection = () => {
             const initialValues = initialFormValues
             
             // Build content blocks array - only include changed blocks
-            const contentBlocks = []
-            const changedObjects = []
+            const updatedContentBlocks: any[] = []
+            const changedObjects: string[] = []
             
             // 1. Check if Header Text (title) or Heading Level changed
             const headerTextChanged = titleBlock && values.headerText !== initialValues.headerText
@@ -219,7 +227,7 @@ const OurJourneySection = () => {
                     customCss = customCss ? `${customCss}; heading-level:${values.headerTextHeadingLevel}` : `heading-level:${values.headerTextHeadingLevel}`
                 }
                 
-                contentBlocks.push({
+                updatedContentBlocks.push({
                     id: titleBlock.id,
                     block_type: titleBlock.block_type,
                     title: values.headerText, // Update the title field
@@ -239,7 +247,7 @@ const OurJourneySection = () => {
             })
             
             if (contentChanged) {
-                contentBlocks.push({
+                updatedContentBlocks.push({
                     id: contentBlock.id,
                     block_type: contentBlock.block_type,
                     title: contentBlock.title,
@@ -261,7 +269,7 @@ const OurJourneySection = () => {
             })
             
             if (uploadFileOverallChanged && values.uploadFileMediaId) {
-                contentBlocks.push({
+                updatedContentBlocks.push({
                     id: imageBlock.id,
                     block_type: imageBlock.block_type,
                     title: imageBlock.title,
@@ -279,10 +287,10 @@ const OurJourneySection = () => {
             }
             
             console.log('Changed objects:', changedObjects)
-            console.log('Content blocks to update:', contentBlocks)
+            console.log('Content blocks to update:', updatedContentBlocks)
             
             // Only proceed if there are changes
-            // if (contentBlocks.length === 0) {
+            // if (updatedContentBlocks.length === 0) {
             //     toast.push(
             //         <Notification type="info" duration={2500} title="No Changes">
             //             No changes detected to save.
@@ -297,7 +305,7 @@ const OurJourneySection = () => {
                 id: 7,
                 name: "Our Journey Content Section",
                 title: "Our Journey Content Section",
-                content_blocks: contentBlocks
+                content_blocks: updatedContentBlocks
             }
             
             console.log('Updating section 7 with:', updateData7)

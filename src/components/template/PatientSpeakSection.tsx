@@ -5,7 +5,7 @@ import * as Yup from 'yup'
 import { useState, useRef } from 'react'
 import { useGetHomeDataQuery, useUpdateHomeSectionMutation } from '@/store/slices/home'
 import { useUploadFileMutation } from '@/store/slices/fileUpload/fileUploadApiSlice'
-import { parsePatientSpeakSection } from '@/services/HomeService'
+import { parsePatientSpeakSection, ContentBlock } from '@/services/HomeService'
 import { toast, Notification } from '@/components/ui'
 
 type PatientSpeakFormSchema = {
@@ -25,15 +25,18 @@ const PatientSpeakSection = () => {
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const getInitialValues = (): PatientSpeakFormSchema => {
-        if (!homeData?.data) {
+        // homeData.data is now the content_blocks array (extracted in API slice)
+        const contentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
+        
+        if (!contentBlocks || contentBlocks.length === 0) {
             return {
                 patientSpeakVideo: "in affiliation logos.mp4",
                 mediaFileId: undefined
             }
         }
         
-        const patientData = parsePatientSpeakSection(homeData.data)
-        const patientBlock = homeData.data.find(block => block.section_id === 3 && block.title === 'Patient Speak')
+        const patientData = parsePatientSpeakSection(contentBlocks)
+        const patientBlock = contentBlocks.find((block: ContentBlock) => block.section_id === 3 && block.title === 'Patient Speak')
         return {
             patientSpeakVideo: patientData.patientSpeakVideo || "in affiliation logos.mp4",
             mediaFileId: patientBlock?.media_files?.[0]?.media_file?.id
@@ -96,8 +99,11 @@ const PatientSpeakSection = () => {
 
     const onSubmit = async (values: PatientSpeakFormSchema) => {
         try {
+            // homeData.data is now the content_blocks array (extracted in API slice)
+            const allContentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
+            
             // Find the patient speak block from the home data
-            const patientBlock = homeData?.data?.find(block => block.section_id === 3 && block.title === 'Patient Speak')
+            const patientBlock = allContentBlocks.find((block: ContentBlock) => block.section_id === 3 && block.title === 'Patient Speak')
             
             if (!patientBlock) {
                 throw new Error('Patient Speak block not found')

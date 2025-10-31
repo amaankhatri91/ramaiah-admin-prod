@@ -47,7 +47,9 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
 
     // Store initial values when data is loaded
     useEffect(() => {
-        if (homeData?.data && !initialFormValues) {
+        // homeData.data is now the content_blocks array (extracted in API slice)
+        const contentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
+        if (contentBlocks && contentBlocks.length > 0 && !initialFormValues) {
             const initialValues = getInitialValues()
             setInitialFormValues(initialValues)
             console.log('Initial form values stored:', initialValues)
@@ -62,7 +64,10 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
     }
 
     const getInitialValues = (): MiddleSectionFormSchema => {
-        if (!homeData?.data) {
+        // homeData.data is now the content_blocks array (extracted in API slice)
+        const contentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
+        
+        if (!contentBlocks || contentBlocks.length === 0) {
             return {
                 headerText: "",
                 headerTextHeadingLevel: 'h1',
@@ -72,12 +77,12 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
         }
         
         // Parse the data based on the three objects structure
-        const middleBlocks = homeData.data.filter(block => block.section_id === sectionId)
+        const middleBlocks = contentBlocks.filter((block: ContentBlock) => block.section_id === sectionId)
         console.log('Middle blocks for section', sectionId, ':', middleBlocks)
         
         // First object: Text block with title (Header Text)
         // Try to find the header block by looking for text blocks first
-        let headerBlock = middleBlocks.find(block => 
+        let headerBlock = middleBlocks.find((block: ContentBlock) => 
             block.block_type === 'text' && 
             block.title && 
             block.title.includes('Legacy & Clinical Excellence')
@@ -85,7 +90,7 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
         
         // If not found, try to find any text block that might contain the header
         if (!headerBlock) {
-            headerBlock = middleBlocks.find(block => 
+            headerBlock = middleBlocks.find((block: ContentBlock) => 
                 block.block_type === 'text' && 
                 block.title
             )
@@ -96,7 +101,7 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
         
         // Second object: Custom block with content (Sub Header Text)
         // Try to find content block with Ramaiah Memorial Hospital text
-        let contentBlock = middleBlocks.find(block => 
+        let contentBlock = middleBlocks.find((block: ContentBlock) => 
             block.block_type === 'custom' && 
             block.content && 
             block.content.includes('Ramaiah Memorial Hospital')
@@ -104,7 +109,7 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
         
         // If not found, try to find any custom block with content
         if (!contentBlock) {
-            contentBlock = middleBlocks.find(block => 
+            contentBlock = middleBlocks.find((block: ContentBlock) => 
                 block.block_type === 'custom' && 
                 block.content
             )
@@ -113,7 +118,7 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
         const subHeaderText = contentBlock?.content || ""
         
         // Third object: Video block with media file (Doctor Speak Video)
-        const videoBlock = middleBlocks.find(block => block.block_type === 'video')
+        const videoBlock = middleBlocks.find((block: ContentBlock) => block.block_type === 'video')
         const doctorSpeakVideo = videoBlock?.media_files?.[0]?.media_file?.original_filename || ""
         const doctorSpeakVideoMediaFileId = videoBlock?.media_files?.[0]?.media_file?.id
         
@@ -188,8 +193,11 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
 
     const onSubmit = async (values: MiddleSectionFormSchema) => {
         try {
+            // homeData.data is now the content_blocks array (extracted in API slice)
+            const allContentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
+            
             // Get the current middle section data to build the update structure
-            const middleBlocks = homeData?.data?.filter(block => block.section_id === sectionId) || []
+            const middleBlocks = allContentBlocks.filter((block: ContentBlock) => block.section_id === sectionId) || []
             console.log('Middle blocks:', middleBlocks)
             
             // Find existing content blocks based on the three objects structure
@@ -204,9 +212,9 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
             //     block.content.includes('Ramaiah Memorial Hospital')
             // )
             // console.log('Content block:', contentBlock)
-            const headerBlock = middleBlocks.find(block => block.block_type === 'text')
-            const contentBlock = middleBlocks.find(block => block.block_type === 'custom')
-            const videoBlock = middleBlocks.find(block => block.block_type === 'video')
+            const headerBlock = middleBlocks.find((block: ContentBlock) => block.block_type === 'text')
+            const contentBlock = middleBlocks.find((block: ContentBlock) => block.block_type === 'custom')
+            const videoBlock = middleBlocks.find((block: ContentBlock) => block.block_type === 'video')
             console.log('Header block:', headerBlock)
             console.log('Content block:', contentBlock)
             console.log('Video block:', videoBlock)
@@ -224,8 +232,8 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
             const initialValues = initialFormValues
             
             // Build content blocks array - only include changed blocks
-            const contentBlocks = []
-            const changedObjects = []
+            const updatedContentBlocks: any[] = []
+            const changedObjects: string[] = []
             
             // 1. Check if Header Text or Heading Level changed
             const headerTextChanged = values.headerText !== initialValues.headerText
@@ -259,7 +267,7 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
                 
                 if (headerBlock) {
                     // Update existing header block
-                    contentBlocks.push({
+                    updatedContentBlocks.push({
                         id: headerBlock.id,
                         block_type: headerBlock.block_type,
                         title: values.headerText,
@@ -267,10 +275,10 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
                         display_order: headerBlock.display_order,
                         custom_css: customCss
                     })
-                    console.log('Header block updated:', contentBlocks)
+                    console.log('Header block updated:', updatedContentBlocks)
                 } else {
                     // Create new header block
-                    contentBlocks.push({
+                    updatedContentBlocks.push({
                         block_type: "text",
                         title: values.headerText,
                         content: values.headerText,
@@ -291,7 +299,7 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
             if (subHeaderTextChanged) {
                 if (contentBlock) {
                     // Update existing content block
-                    contentBlocks.push({
+                    updatedContentBlocks.push({
                         id: contentBlock.id,
                         block_type: contentBlock.block_type,
                         title: contentBlock.title,
@@ -300,7 +308,7 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
                     })
                 } else {
                     // Create new content block
-                contentBlocks.push({
+                updatedContentBlocks.push({
                         block_type: "text",
                         title: null,
                     content: values.subHeaderText
@@ -323,7 +331,7 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
             if (videoChanged) {
                 if (videoBlock) {
                     // Update existing video block
-                contentBlocks.push({
+                updatedContentBlocks.push({
                     id: videoBlock.id,
                     block_type: videoBlock.block_type,
                     title: videoBlock.title,
@@ -337,10 +345,10 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
                         display_order: 1
                     }] : []
                 })
-                console.log('Video block updated:', contentBlocks)
+                console.log('Video block updated:', updatedContentBlocks)
                 } else {
                     // Create new video block
-                    contentBlocks.push({
+                    updatedContentBlocks.push({
                         block_type: "video",
                         title: null,
                         media_files: values.doctorSpeakVideoMediaFileId ? [{
@@ -354,10 +362,10 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
             }
             
             console.log('Changed objects:', changedObjects)
-            console.log('Content blocks to update:', contentBlocks)
+            console.log('Content blocks to update:', updatedContentBlocks)
             
             // // Only proceed if there are changes
-            // if (contentBlocks.length === 0) {
+            // if (updatedContentBlocks.length === 0) {
             //     toast.push(
             //         <Notification type="info" duration={2500} title="No Changes">
             //             No changes detected to save.
@@ -372,7 +380,7 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
                 id: sectionId, // Dynamic section ID
                 name: "Middle Section",
                 title: "Middle Section",
-                content_blocks: contentBlocks
+                content_blocks: updatedContentBlocks
             }
             
             console.log('Final payload being sent:', updateData)

@@ -108,7 +108,15 @@ export const parseHeroSection = (blocks: ContentBlock[]) => {
     
     const headlineBlock = heroBlocks.find(block => block.title === 'Hero Headline')
     const subtitleBlock = heroBlocks.find(block => block.title === 'Hero Subtitle')
-    const bannerBlock = heroBlocks.find(block => block.title === 'Banner Images')
+    // Find banner block - title can be "banner image" (lowercase) or "Banner Images" or by block_type
+    const bannerBlock = heroBlocks.find(block => 
+        block.media_files &&
+        block.media_files.length > 0 &&
+        (block.title?.toLowerCase() === 'banner image' || 
+         block.title?.toLowerCase() === 'banner images' ||
+         block.title === 'joint commission international' ||
+         (block.block_type === 'image' && block.section_id === 1))
+    )
     const smallBannerBlock = heroBlocks.find(block => block.title === 'Small Banner')
     
     return {

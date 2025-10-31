@@ -5,7 +5,7 @@ import * as Yup from 'yup'
 import { useState, useRef } from 'react'
 import { useGetHomeDataQuery, useUpdateHomeSectionMutation } from '@/store/slices/home'
 import { useUploadFileMutation } from '@/store/slices/fileUpload/fileUploadApiSlice'
-import { parseDoctorSpeakSection } from '@/services/HomeService'
+import { parseDoctorSpeakSection, ContentBlock } from '@/services/HomeService'
 import { toast, Notification } from '@/components/ui'
 
 type DoctorSpeakFormSchema = {
@@ -25,15 +25,18 @@ const DoctorSpeakSection = () => {
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const getInitialValues = (): DoctorSpeakFormSchema => {
-        if (!homeData?.data) {
+        // homeData.data is now the content_blocks array (extracted in API slice)
+        const contentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
+        
+        if (!contentBlocks || contentBlocks.length === 0) {
             return {
                 doctorSpeakVideo: "",
                 mediaFileId: undefined
             }
         }
         
-        const doctorData = parseDoctorSpeakSection(homeData.data)
-        const doctorBlock = homeData.data.find(block => block.section_id === 3 && block.title === 'Doctor Speak')
+        const doctorData = parseDoctorSpeakSection(contentBlocks)
+        const doctorBlock = contentBlocks.find((block: ContentBlock) => block.section_id === 3 && block.title === 'Doctor Speak')
         return {
             doctorSpeakVideo: doctorData.doctorSpeakVideo || "",
             mediaFileId: doctorBlock?.media_files?.[0]?.media_file?.id
@@ -107,8 +110,11 @@ const DoctorSpeakSection = () => {
                 return
             }
 
+            // homeData.data is now the content_blocks array (extracted in API slice)
+            const allContentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
+            
             // Find the doctor speak block from the home data
-            const doctorBlock = homeData?.data?.find(block => block.section_id === 3 && block.title === 'Doctor Speak')
+            const doctorBlock = allContentBlocks.find((block: ContentBlock) => block.section_id === 3 && block.title === 'Doctor Speak')
             
             // Handle case where block doesn't exist - use default structure
             const blockId = doctorBlock?.id || 0

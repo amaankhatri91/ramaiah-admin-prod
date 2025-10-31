@@ -77,7 +77,9 @@ const HeroSection = () => {
 
     // Store initial values when data is loaded
     useEffect(() => {
-        if (homeData?.data && !initialFormValues) {
+        // homeData.data is now the content_blocks array (extracted in API slice)
+        const contentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
+        if (contentBlocks && contentBlocks.length > 0 && !initialFormValues) {
             const initialValues = getInitialValues()
             setInitialFormValues(initialValues)
             console.log('Initial form values stored:', initialValues)
@@ -85,7 +87,10 @@ const HeroSection = () => {
     }, [homeData, initialFormValues])
 
     const getInitialValues = (): HeroSectionFormSchema => {
-        if (!homeData?.data) {
+        // homeData.data is now the content_blocks array (extracted in API slice)
+        const contentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
+
+        if (!contentBlocks || contentBlocks.length === 0) {
             return {
                 headerText: "Our Decades Of Legacy & Clinical Excellence Has...",
                 headerHeadingLevel: 'h1',
@@ -102,12 +107,12 @@ const HeroSection = () => {
             }
         }
 
-        const heroData = parseHeroSection(homeData.data)
+        const heroData = parseHeroSection(contentBlocks)
 
         // Extract heading levels from custom_css or default to h1/h2
-        const heroBlocks = homeData.data.filter(block => block.section_id === 1)
-        const headlineBlock = heroBlocks.find(block => block.title === 'Hero Headline')
-        const subtitleBlock = heroBlocks.find(block => block.title === 'Hero Subtitle')
+        const heroBlocks = contentBlocks.filter((block: ContentBlock) => block.section_id === 1)
+        const headlineBlock = heroBlocks.find((block: ContentBlock) => block.title === 'Hero Headline')
+        const subtitleBlock = heroBlocks.find((block: ContentBlock) => block.title === 'Hero Subtitle')
 
         // Parse heading level from custom_css (e.g., "heading-level:h1") or default
         const getHeadingLevel = (block: ContentBlock | undefined, defaultValue: string): string => {
@@ -118,13 +123,17 @@ const HeroSection = () => {
 
         // Extract banner images with proper media_file_id from the banner block
         // Look for blocks with media_files that contain banner images
-        const bannerBlock = homeData.data.find(block =>
+        // According to the API response, the title is "banner image" (lowercase)
+        const bannerBlock = contentBlocks.find((block: ContentBlock) =>
             block.section_id === 1 &&
             block.media_files &&
             block.media_files.length > 0 &&
-            (block.title === 'Banner Images' || block.title === 'joint commission international' || block.block_type === 'image')
+            (block.title?.toLowerCase() === 'banner image' || 
+             block.title?.toLowerCase() === 'banner images' ||
+             block.title === 'joint commission international' || 
+             (block.block_type === 'image' && block.section_id === 1))
         )
-        const bannerImages = bannerBlock?.media_files?.map((mediaFile, index) => ({
+        const bannerImages = bannerBlock?.media_files?.map((mediaFile: any, index: number) => ({
             id: (index + 1).toString(),
             name: mediaFile.media_file.original_filename,
             media_file_id: mediaFile.media_file.id
@@ -326,18 +335,24 @@ const HeroSection = () => {
 
     const onSubmit = async (values: HeroSectionFormSchema) => {
         try {
+            // homeData.data is now the content_blocks array (extracted in API slice)
+            const allContentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
+            
             // Get the current hero section data to build the update structure
-            const heroBlocks = homeData?.data?.filter(block => block.section_id === 1) || []
+            const heroBlocks = allContentBlocks.filter((block: ContentBlock) => block.section_id === 1) || []
 
             // Find existing content blocks
-            const headlineBlock = heroBlocks.find(block => block.title === 'Hero Headline')
-            const subtitleBlock = heroBlocks.find(block => block.title === 'Hero Subtitle')
-            const bannerBlock = heroBlocks.find(block =>
+            const headlineBlock = heroBlocks.find((block: ContentBlock) => block.title === 'Hero Headline')
+            const subtitleBlock = heroBlocks.find((block: ContentBlock) => block.title === 'Hero Subtitle')
+            const bannerBlock = heroBlocks.find((block: ContentBlock) =>
                 block.media_files &&
                 block.media_files.length > 0 &&
-                (block.title === 'Banner Images' || block.title === 'joint commission international' || block.block_type === 'image')
+                (block.title?.toLowerCase() === 'banner image' || 
+                 block.title?.toLowerCase() === 'banner images' ||
+                 block.title === 'joint commission international' || 
+                 block.block_type === 'image')
             )
-            const smallBannerBlock = heroBlocks.find(block => block.title === 'Small Banner')
+            const smallBannerBlock = heroBlocks.find((block: ContentBlock) => block.title === 'Small Banner')
 
             // Get initial values to compare changes
             if (!initialFormValues) {
@@ -353,8 +368,8 @@ const HeroSection = () => {
 
             // Build content blocks array - only include changed blocks
             // Available media types: ['primary', 'background', 'icon', 'thumbnail', 'gallery', 'slider']
-            const contentBlocks = []
-            const changedObjects = []
+            const updatedContentBlocks: any[] = []
+            const changedObjects: string[] = []
 
             // 1. Check if Hero Text (Header Text) or Heading Level changed
             const headerTextChanged = headlineBlock && values.headerText !== initialValues.headerText
@@ -381,7 +396,7 @@ const HeroSection = () => {
                         customCss = customCss ? `${customCss}; heading-level:${values.headerHeadingLevel}` : `heading-level:${values.headerHeadingLevel}`
                     }
                 }
-                contentBlocks.push({
+                updatedContentBlocks.push({
                     id: headlineBlock.id,
                     block_type: headlineBlock.block_type,
                     title: headlineBlock.title,
@@ -416,7 +431,7 @@ const HeroSection = () => {
                         customCss = customCss ? `${customCss}; heading-level:${values.subHeaderHeadingLevel}` : `heading-level:${values.subHeaderHeadingLevel}`
                     }
                 }
-                contentBlocks.push({
+                updatedContentBlocks.push({
                     id: subtitleBlock.id,
                     block_type: subtitleBlock.block_type,
                     title: subtitleBlock.title,
@@ -471,9 +486,9 @@ const HeroSection = () => {
                         })
                         .filter(media => media !== null) // Remove null entries
 
-                    // Only add to contentBlocks if there are actual media file changes
+                    // Only add to updatedContentBlocks if there are actual media file changes
                     if (mediaFiles.length > 0) {
-                        contentBlocks.push({
+                        updatedContentBlocks.push({
                             id: bannerBlock.id,
                             block_type: bannerBlock.block_type,
                             title: bannerBlock.title,
@@ -496,7 +511,7 @@ const HeroSection = () => {
             })
 
             if (smallBannerChanged) {
-                contentBlocks.push({
+                updatedContentBlocks.push({
                     id: smallBannerBlock.id,
                     block_type: smallBannerBlock.block_type,
                     title: smallBannerBlock.title,
@@ -512,7 +527,7 @@ const HeroSection = () => {
             }
 
             console.log('Changed objects:', changedObjects)
-            console.log('Content blocks to update:', contentBlocks)
+            console.log('Content blocks to update:', updatedContentBlocks)
 
             // Only proceed if there are changes
             // if (contentBlocks.length === 0) {
@@ -530,7 +545,7 @@ const HeroSection = () => {
                 id: 1, // Hero section ID
                 name: "Hero Section",
                 title: "Hero Section",
-                content_blocks: contentBlocks
+                content_blocks: updatedContentBlocks
             }
 
             console.log('Final payload being sent:', updateData)
