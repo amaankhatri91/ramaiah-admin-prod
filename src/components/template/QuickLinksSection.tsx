@@ -1,11 +1,11 @@
-import { Card, Input, Button } from '@/components/ui'
+import { Card, Input, Button, Select } from '@/components/ui'
 import { FormItem, FormContainer } from '@/components/ui/Form'
 import { Field, Form, Formik } from 'formik'
 import * as Yup from 'yup'
 import { useState, useEffect } from 'react'
 import { useGetHomeDataQuery, useUpdateHomeSectionMutation } from '@/store/slices/home'
 import { useUploadFileMutation } from '@/store/slices/fileUpload/fileUploadApiSlice'
-import { parseQuickLinksSection } from '@/services/HomeService'
+import { parseQuickLinksSection, ContentBlock } from '@/services/HomeService'
 import { toast, Notification } from '@/components/ui'
 
 interface QuickLink {
@@ -14,6 +14,7 @@ interface QuickLink {
     link: string
     icon: string
     mediaFileId?: number
+    headingLevel?: string
 }
 
 type QuickLinksFormSchema = {
@@ -26,9 +27,19 @@ const validationSchema = Yup.object().shape({
             name: Yup.string().required('Name is required'),
             link: Yup.string().url('Please enter a valid URL'),
             icon: Yup.string().required('Icon is required'),
+            headingLevel: Yup.string().required('Heading level is required'),
         })
     ).min(1, 'At least one quick link is required'),
 })
+
+const headingLevelOptions = [
+    { value: 'h1', label: 'H1' },
+    { value: 'h2', label: 'H2' },
+    { value: 'h3', label: 'H3' },
+    { value: 'h4', label: 'H4' },
+    { value: 'h5', label: 'H5' },
+    { value: 'h6', label: 'H6' },
+]
 
 const QuickLinksSection = () => {
     const [updateHomeSection, { isLoading: isUpdating }] = useUpdateHomeSectionMutation()
@@ -47,33 +58,51 @@ const QuickLinksSection = () => {
     }, [homeData, initialFormValues])
 
     const getInitialValues = (): QuickLinksFormSchema => {
+        // Helper function to parse heading level from custom_css
+        const getHeadingLevel = (block: ContentBlock | undefined, defaultValue: string): string => {
+            if (!block?.custom_css) return defaultValue
+            const match = block.custom_css.match(/heading-level:\s*(h[1-6])/i)
+            return match ? match[1].toLowerCase() : defaultValue
+        }
+
         if (!homeData?.data) {
             return {
                 quickLinks: [
-                    { id: '1', name: 'Book OPD Appointments (9 am - 5 pm)', link: '', icon: 'icon_01.svg', mediaFileId: undefined },
-                    { id: '2', name: 'Book Prime Clinic Appointments (5 pm - 8 pm)', link: '', icon: 'icon_01.svg', mediaFileId: undefined },
-                    { id: '3', name: 'Book Video Consultation', link: '', icon: 'icon_01.svg', mediaFileId: undefined },
-                    { id: '4', name: 'Book Radiology Tests', link: '', icon: 'icon_01.svg', mediaFileId: undefined },
-                    { id: '5', name: 'Book Home Sample Collection', link: '', icon: 'icon_01.svg', mediaFileId: undefined },
-                    { id: '6', name: 'Book Home Physiotherapy', link: '', icon: 'icon_01.svg', mediaFileId: undefined }
+                    { id: '1', name: 'Book OPD Appointments (9 am - 5 pm)', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' },
+                    { id: '2', name: 'Book Prime Clinic Appointments (5 pm - 8 pm)', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' },
+                    { id: '3', name: 'Book Video Consultation', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' },
+                    { id: '4', name: 'Book Radiology Tests', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' },
+                    { id: '5', name: 'Book Home Sample Collection', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' },
+                    { id: '6', name: 'Book Home Physiotherapy', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' }
                 ]
             }
         }
         
+        const quickLinkBlocks = homeData.data.filter((block: any) => block.section_id === 2) || []
         const quickLinksData = parseQuickLinksSection(homeData.data)
+        
+        // Map quick links with heading levels from blocks
+        const quickLinksWithHeadingLevels = quickLinksData.map((link, index) => {
+            const block = quickLinkBlocks[index]
+            return {
+                ...link,
+                headingLevel: getHeadingLevel(block, 'h3')
+            }
+        })
+        
         return {
-            quickLinks: quickLinksData.length > 0 ? quickLinksData : [
-                { id: '1', name: 'Book OPD Appointments (9 am - 5 pm)', link: '', icon: 'icon_01.svg', mediaFileId: undefined },
-                { id: '2', name: 'Book Prime Clinic Appointments (5 pm - 8 pm)', link: '', icon: 'icon_01.svg', mediaFileId: undefined },
-                { id: '3', name: 'Book Video Consultation', link: '', icon: 'icon_01.svg', mediaFileId: undefined },
-                { id: '4', name: 'Book Radiology Tests', link: '', icon: 'icon_01.svg', mediaFileId: undefined },
-                { id: '5', name: 'Book Home Sample Collection', link: '', icon: 'icon_01.svg', mediaFileId: undefined },
-                { id: '6', name: 'Book Home Physiotherapy', link: '', icon: 'icon_01.svg', mediaFileId: undefined }
+            quickLinks: quickLinksWithHeadingLevels.length > 0 ? quickLinksWithHeadingLevels : [
+                { id: '1', name: 'Book OPD Appointments (9 am - 5 pm)', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' },
+                { id: '2', name: 'Book Prime Clinic Appointments (5 pm - 8 pm)', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' },
+                { id: '3', name: 'Book Video Consultation', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' },
+                { id: '4', name: 'Book Radiology Tests', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' },
+                { id: '5', name: 'Book Home Sample Collection', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' },
+                { id: '6', name: 'Book Home Physiotherapy', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' }
             ]
         }
     }
 
-    const handleQuickLinkChange = (setFieldValue: any, quickLinks: QuickLink[], id: string, field: 'name' | 'link' | 'icon', value: string) => {
+    const handleQuickLinkChange = (setFieldValue: any, quickLinks: QuickLink[], id: string, field: 'name' | 'link' | 'icon' | 'headingLevel', value: string) => {
         const updatedLinks = quickLinks.map(link => 
             link.id === id ? { ...link, [field]: value } : link
         )
@@ -186,18 +215,33 @@ const QuickLinksSection = () => {
                 const linkChanged = link.link !== initialLink?.link
                 // Check if icon/media file changed
                 const iconChanged = link.mediaFileId !== initialLink?.mediaFileId
+                // Check if heading level changed
+                const headingLevelChanged = link.headingLevel !== initialLink?.headingLevel
                 
-                if (nameChanged || linkChanged || iconChanged) {
+                if (nameChanged || linkChanged || iconChanged || headingLevelChanged) {
                     console.log(`Quick Link ${index + 1} changed:`, {
                         name: { current: link.name, initial: initialLink?.name, changed: nameChanged },
                         link: { current: link.link, initial: initialLink?.link, changed: linkChanged },
-                        icon: { current: link.mediaFileId, initial: initialLink?.mediaFileId, changed: iconChanged }
+                        icon: { current: link.mediaFileId, initial: initialLink?.mediaFileId, changed: iconChanged },
+                        headingLevel: { current: link.headingLevel, initial: initialLink?.headingLevel, changed: headingLevelChanged }
                     })
                     
                     const contentBlock: any = {
                         id: existingBlock.id,
                         block_type: existingBlock.block_type,
                         title: link.name, // Update the title with new name
+                    }
+                    
+                    // Add custom_css with heading level if heading level changed or name changed (to preserve heading level)
+                    if ((headingLevelChanged || nameChanged) && link.headingLevel) {
+                        let customCss = existingBlock.custom_css || ''
+                        // Replace existing heading-level or add new one
+                        if (customCss.match(/heading-level:\s*h[1-6]/i)) {
+                            customCss = customCss.replace(/heading-level:\s*h[1-6]/i, `heading-level:${link.headingLevel}`)
+                        } else {
+                            customCss = customCss ? `${customCss}; heading-level:${link.headingLevel}` : `heading-level:${link.headingLevel}`
+                        }
+                        contentBlock.custom_css = customCss
                     }
                     
                     // Add content if link changed
@@ -263,6 +307,10 @@ const QuickLinksSection = () => {
             }).unwrap()
             
             if (result.success) {
+                // Update initial values to current values after successful update
+                setInitialFormValues(values)
+                console.log('Initial values updated after successful save:', values)
+                
                 toast.push(
                     <Notification type="success" duration={2500} title="Success">
                         Quick links updated successfully
@@ -324,12 +372,22 @@ const QuickLinksSection = () => {
                                                     invalid={(errors.quickLinks?.[index] && typeof errors.quickLinks[index] === 'object' && (errors.quickLinks[index] as any)?.name && touched.quickLinks?.[index]?.name) as boolean}
                                                     errorMessage={errors.quickLinks?.[index] && typeof errors.quickLinks[index] === 'object' ? String((errors.quickLinks[index] as any)?.name || '') : undefined}
                                                 >
-                                                    <Input
-                                                        value={link.name}
-                                                        onChange={(e) => handleQuickLinkChange(setFieldValue, values.quickLinks, link.id, 'name', e.target.value)}
-                                                        className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                                                        placeholder="Enter box name"
-                                                    />
+                                                    <div className="flex gap-3">
+                                                        <Select
+                                                            options={headingLevelOptions}
+                                                            className="!w-[100px] !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500 flex-shrink-0"
+                                                            onChange={(option: any) => {
+                                                                handleQuickLinkChange(setFieldValue, values.quickLinks, link.id, 'headingLevel', option?.value || 'h3')
+                                                            }}
+                                                            value={headingLevelOptions.find(option => option.value === (link.headingLevel || 'h3'))}
+                                                        />
+                                                        <Input
+                                                            value={link.name}
+                                                            onChange={(e) => handleQuickLinkChange(setFieldValue, values.quickLinks, link.id, 'name', e.target.value)}
+                                                            className="flex-1 !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                                            placeholder="Enter box name"
+                                                        />
+                                                    </div>
                                                 </FormItem>
                                             </div>
 

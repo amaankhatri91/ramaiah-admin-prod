@@ -1,4 +1,4 @@
-import { Card, Input, Button } from '@/components/ui'
+import { Card, Input, Button, Select } from '@/components/ui'
 import { FormItem, FormContainer } from '@/components/ui/Form'
 import { Field, Form, Formik } from 'formik'
 import * as Yup from 'yup'
@@ -7,7 +7,7 @@ import Modal from 'react-modal'
 import { SIDE_NAV_WIDTH } from '@/constants/theme.constant'
 import { useUploadFileMutation } from '@/store/slices/fileUpload/fileUploadApiSlice'
 import { useGetHomeDataQuery, useUpdateHomeSectionMutation } from '@/store/slices/home'
-import { parseHeroSection } from '@/services/HomeService'
+import { parseHeroSection, ContentBlock } from '@/services/HomeService'
 import { toast, Notification } from '@/components/ui'
 
 interface BannerImage {
@@ -19,7 +19,9 @@ interface BannerImage {
 
 type HeroSectionFormSchema = {
     headerText: string
+    headerHeadingLevel: string
     subHeaderText: string
+    subHeaderHeadingLevel: string
     buttonText: string
     buttonLink: string
     bannerImages: BannerImage[]
@@ -35,12 +37,23 @@ type BannerModalFormSchema = {
 
 const validationSchema = Yup.object().shape({
     headerText: Yup.string().required('Header text is required'),
+    headerHeadingLevel: Yup.string().required('Header heading level is required'),
     subHeaderText: Yup.string().required('Sub header text is required'),
+    subHeaderHeadingLevel: Yup.string().required('Sub header heading level is required'),
     buttonText: Yup.string().required('Button text is required'),
     buttonLink: Yup.string().url('Please enter a valid URL').required('Button link is required'),
     bannerImages: Yup.array().min(1, 'At least one banner image is required'),
     smallBannerFile: Yup.string().required('Small banner file is required'),
 })
+
+const headingLevelOptions = [
+    { value: 'h1', label: 'H1' },
+    { value: 'h2', label: 'H2' },
+    { value: 'h3', label: 'H3' },
+    { value: 'h4', label: 'H4' },
+    { value: 'h5', label: 'H5' },
+    { value: 'h6', label: 'H6' },
+]
 
 const bannerModalValidationSchema = Yup.object().shape({
     bannerImageName: Yup.string().required('Banner image name is required'),
@@ -75,7 +88,9 @@ const HeroSection = () => {
         if (!homeData?.data) {
             return {
                 headerText: "Our Decades Of Legacy & Clinical Excellence Has...",
+                headerHeadingLevel: 'h1',
                 subHeaderText: "#LifeGetsBetter",
+                subHeaderHeadingLevel: 'h2',
                 buttonText: "Book Appointment",
                 buttonLink: "https://www.somepagelink.com",
                 bannerImages: [
@@ -86,14 +101,26 @@ const HeroSection = () => {
                 smallBannerFile: "Ramaiah_introduction Video.mp4"
             }
         }
-        
+
         const heroData = parseHeroSection(homeData.data)
-        
+
+        // Extract heading levels from custom_css or default to h1/h2
+        const heroBlocks = homeData.data.filter(block => block.section_id === 1)
+        const headlineBlock = heroBlocks.find(block => block.title === 'Hero Headline')
+        const subtitleBlock = heroBlocks.find(block => block.title === 'Hero Subtitle')
+
+        // Parse heading level from custom_css (e.g., "heading-level:h1") or default
+        const getHeadingLevel = (block: ContentBlock | undefined, defaultValue: string): string => {
+            if (!block?.custom_css) return defaultValue
+            const match = block.custom_css.match(/heading-level:\s*(h[1-6])/i)
+            return match ? match[1].toLowerCase() : defaultValue
+        }
+
         // Extract banner images with proper media_file_id from the banner block
         // Look for blocks with media_files that contain banner images
-        const bannerBlock = homeData.data.find(block => 
-            block.section_id === 1 && 
-            block.media_files && 
+        const bannerBlock = homeData.data.find(block =>
+            block.section_id === 1 &&
+            block.media_files &&
             block.media_files.length > 0 &&
             (block.title === 'Banner Images' || block.title === 'joint commission international' || block.block_type === 'image')
         )
@@ -102,14 +129,16 @@ const HeroSection = () => {
             name: mediaFile.media_file.original_filename,
             media_file_id: mediaFile.media_file.id
         })) || [
-            { id: '1', name: 'Main Banner Image.jpg' },
-            { id: '2', name: 'Second Banner Image.jpg' },
-            { id: '3', name: 'Third Banner Image.jpg' }
-        ]
-        
+                { id: '1', name: 'Main Banner Image.jpg' },
+                { id: '2', name: 'Second Banner Image.jpg' },
+                { id: '3', name: 'Third Banner Image.jpg' }
+            ]
+
         return {
             headerText: heroData.headerText || "Our Decades Of Legacy & Clinical Excellence Has...",
+            headerHeadingLevel: getHeadingLevel(headlineBlock, 'h1'),
             subHeaderText: heroData.subHeaderText || "#LifeGetsBetter",
+            subHeaderHeadingLevel: getHeadingLevel(subtitleBlock, 'h2'),
             buttonText: "Book Appointment",
             buttonLink: "https://www.somepagelink.com",
             bannerImages: bannerImages,
@@ -152,10 +181,10 @@ const HeroSection = () => {
             // Update existing banner - use the uploaded file name if available, otherwise use the banner image name
             const updatedBanners = mainBannerImages.map(banner =>
                 banner.id === editingBanner.id
-                    ? { 
-                        ...banner, 
+                    ? {
+                        ...banner,
                         name: values.imageFile || values.bannerImageName, // Use uploaded file name if available
-                        media_file_id: values.mediaFileId 
+                        media_file_id: values.mediaFileId
                     }
                     : banner
             )
@@ -179,9 +208,9 @@ const HeroSection = () => {
 
         try {
             setFieldValue('imageFile', file.name)
-            
+
             const result = await uploadFile({ file }).unwrap()
-            
+
             if (result.status === 1) {
                 toast.push(
                     <Notification type="success" duration={2500} title="Upload Success">
@@ -189,7 +218,7 @@ const HeroSection = () => {
                     </Notification>,
                     { placement: 'top-end' }
                 )
-                
+
                 // Update the banner with the original filename and media file ID from the response
                 // Access savedMedia from result.data.savedMedia based on the response structure
                 const responseData = result.data as any
@@ -199,7 +228,7 @@ const HeroSection = () => {
                     // Fallback to filePath if original_filename is not available
                     setFieldValue('imageFile', responseData.filePath)
                 }
-                
+
                 // Set the media file ID for the API call - this is the key part
                 if (responseData?.savedMedia?.id) {
                     setFieldValue('mediaFileId', responseData.savedMedia.id)
@@ -216,7 +245,7 @@ const HeroSection = () => {
                 </Notification>,
                 { placement: 'top-end' }
             )
-            
+
             // Reset the field values on error
             setFieldValue('imageFile', '')
             setFieldValue('mediaFileId', undefined)
@@ -251,9 +280,9 @@ const HeroSection = () => {
 
         try {
             setFieldValue('smallBannerFile', file.name)
-            
+
             const result = await uploadFile({ file }).unwrap()
-            
+
             if (result.status === 1) {
                 toast.push(
                     <Notification type="success" duration={2500} title="Upload Success">
@@ -261,7 +290,7 @@ const HeroSection = () => {
                     </Notification>,
                     { placement: 'top-end' }
                 )
-                
+
                 // Update the field with the original filename from the response
                 // Access savedMedia from result.data.savedMedia based on the response structure
                 const responseData = result.data as any
@@ -271,7 +300,7 @@ const HeroSection = () => {
                     // Fallback to filePath if original_filename is not available
                     setFieldValue('smallBannerFile', responseData.filePath)
                 }
-                
+
                 // Set the media file ID for the API call - this is the key part
                 if (responseData?.savedMedia?.id) {
                     setFieldValue('smallBannerMediaFileId', responseData.savedMedia.id)
@@ -288,7 +317,7 @@ const HeroSection = () => {
                 </Notification>,
                 { placement: 'top-end' }
             )
-            
+
             // Reset the field values on error
             setFieldValue('smallBannerFile', '')
             setFieldValue('smallBannerMediaFileId', undefined)
@@ -299,17 +328,17 @@ const HeroSection = () => {
         try {
             // Get the current hero section data to build the update structure
             const heroBlocks = homeData?.data?.filter(block => block.section_id === 1) || []
-            
+
             // Find existing content blocks
             const headlineBlock = heroBlocks.find(block => block.title === 'Hero Headline')
             const subtitleBlock = heroBlocks.find(block => block.title === 'Hero Subtitle')
-            const bannerBlock = heroBlocks.find(block => 
-                block.media_files && 
+            const bannerBlock = heroBlocks.find(block =>
+                block.media_files &&
                 block.media_files.length > 0 &&
                 (block.title === 'Banner Images' || block.title === 'joint commission international' || block.block_type === 'image')
             )
             const smallBannerBlock = heroBlocks.find(block => block.title === 'Small Banner')
-            
+
             // Get initial values to compare changes
             if (!initialFormValues) {
                 toast.push(
@@ -321,80 +350,114 @@ const HeroSection = () => {
                 return
             }
             const initialValues = initialFormValues
-            
+
             // Build content blocks array - only include changed blocks
             // Available media types: ['primary', 'background', 'icon', 'thumbnail', 'gallery', 'slider']
             const contentBlocks = []
             const changedObjects = []
-            
-            // 1. Check if Hero Text (Header Text) changed
+
+            // 1. Check if Hero Text (Header Text) or Heading Level changed
             const headerTextChanged = headlineBlock && values.headerText !== initialValues.headerText
+            const headerHeadingLevelChanged = headlineBlock && values.headerHeadingLevel !== initialValues.headerHeadingLevel
             console.log('Header Text comparison:', {
                 current: values.headerText,
                 initial: initialValues.headerText,
                 changed: headerTextChanged
             })
-            
-            if (headerTextChanged) {
+            console.log('Header Heading Level comparison:', {
+                current: values.headerHeadingLevel,
+                initial: initialValues.headerHeadingLevel,
+                changed: headerHeadingLevelChanged
+            })
+
+            if (headerTextChanged || headerHeadingLevelChanged) {
+                // Build custom_css with heading level, preserving existing custom_css if any
+                let customCss = headlineBlock.custom_css || ''
+                if (headerHeadingLevelChanged) {
+                    // Replace existing heading-level or add new one
+                    if (customCss.match(/heading-level:\s*h[1-6]/i)) {
+                        customCss = customCss.replace(/heading-level:\s*h[1-6]/i, `heading-level:${values.headerHeadingLevel}`)
+                    } else {
+                        customCss = customCss ? `${customCss}; heading-level:${values.headerHeadingLevel}` : `heading-level:${values.headerHeadingLevel}`
+                    }
+                }
                 contentBlocks.push({
                     id: headlineBlock.id,
                     block_type: headlineBlock.block_type,
                     title: headlineBlock.title,
-                    content: values.headerText
+                    content: values.headerText,
+                    custom_css: customCss
                 })
                 changedObjects.push('Hero Text')
             }
-            
-            // 2. Check if Sub Header Text changed
+
+            // 2. Check if Sub Header Text or Heading Level changed
             const subHeaderTextChanged = subtitleBlock && values.subHeaderText !== initialValues.subHeaderText
+            const subHeaderHeadingLevelChanged = subtitleBlock && values.subHeaderHeadingLevel !== initialValues.subHeaderHeadingLevel
             console.log('Sub Header Text comparison:', {
                 current: values.subHeaderText,
                 initial: initialValues.subHeaderText,
                 changed: subHeaderTextChanged
             })
-            
-            if (subHeaderTextChanged) {
+            console.log('Sub Header Heading Level comparison:', {
+                current: values.subHeaderHeadingLevel,
+                initial: initialValues.subHeaderHeadingLevel,
+                changed: subHeaderHeadingLevelChanged
+            })
+
+            if (subHeaderTextChanged || subHeaderHeadingLevelChanged) {
+                // Build custom_css with heading level, preserving existing custom_css if any
+                let customCss = subtitleBlock.custom_css || ''
+                if (subHeaderHeadingLevelChanged) {
+                    // Replace existing heading-level or add new one
+                    if (customCss.match(/heading-level:\s*h[1-6]/i)) {
+                        customCss = customCss.replace(/heading-level:\s*h[1-6]/i, `heading-level:${values.subHeaderHeadingLevel}`)
+                    } else {
+                        customCss = customCss ? `${customCss}; heading-level:${values.subHeaderHeadingLevel}` : `heading-level:${values.subHeaderHeadingLevel}`
+                    }
+                }
                 contentBlocks.push({
                     id: subtitleBlock.id,
                     block_type: subtitleBlock.block_type,
                     title: subtitleBlock.title,
-                    content: values.subHeaderText
+                    content: values.subHeaderText,
+                    custom_css: customCss
                 })
                 changedObjects.push('Sub Header Text')
             }
-            
+
             // 3. Check if Banner Images changed
             if (bannerBlock) {
                 const initialBannerImages = initialValues.bannerImages
                 const currentBannerImages = values.bannerImages
-                
+
                 // Check if banner images array changed (length, names, or media_file_ids)
-                const bannerImagesChanged = 
+                const bannerImagesChanged =
                     initialBannerImages.length !== currentBannerImages.length ||
                     initialBannerImages.some((initial, index) => {
                         const current = currentBannerImages[index]
-                        return !current || 
-                               initial.name !== current.name || 
-                               initial.media_file_id !== current.media_file_id
+                        return !current ||
+                            initial.name !== current.name ||
+                            initial.media_file_id !== current.media_file_id
                     })
-                
+
                 if (bannerImagesChanged) {
                     console.log('Banner Images changed:', {
                         initial: initialBannerImages,
                         current: currentBannerImages
                     })
-                    
+
                     // Update existing media files instead of adding new ones
                     const mediaFiles = values.bannerImages
                         .map((banner, index) => {
                             const initialBanner = initialBannerImages[index]
                             const existingMediaFile = bannerBlock.media_files[index]
-                            
+
                             // Check if this media file has changed
-                            const hasChanged = !initialBanner || 
+                            const hasChanged = !initialBanner ||
                                 initialBanner.media_file_id !== banner.media_file_id ||
                                 !banner.media_file_id // If no media_file_id, it's a new upload
-                            
+
                             if (hasChanged && banner.media_file_id && existingMediaFile) {
                                 return {
                                     id: existingMediaFile.id, // Use existing media file ID for update
@@ -407,7 +470,7 @@ const HeroSection = () => {
                             return null
                         })
                         .filter(media => media !== null) // Remove null entries
-                    
+
                     // Only add to contentBlocks if there are actual media file changes
                     if (mediaFiles.length > 0) {
                         contentBlocks.push({
@@ -420,18 +483,18 @@ const HeroSection = () => {
                     }
                 }
             }
-            
+
             // 4. Check if Small Banner changed
             const smallBannerFileChanged = values.smallBannerFile !== initialValues.smallBannerFile
             const smallBannerMediaFileIdChanged = values.smallBannerMediaFileId !== initialValues.smallBannerMediaFileId
             const smallBannerChanged = smallBannerBlock && (smallBannerFileChanged || smallBannerMediaFileIdChanged)
-            
+
             console.log('Small Banner comparison:', {
                 file: { current: values.smallBannerFile, initial: initialValues.smallBannerFile, changed: smallBannerFileChanged },
                 mediaFileId: { current: values.smallBannerMediaFileId, initial: initialValues.smallBannerMediaFileId, changed: smallBannerMediaFileIdChanged },
                 overallChanged: smallBannerChanged
             })
-            
+
             if (smallBannerChanged) {
                 contentBlocks.push({
                     id: smallBannerBlock.id,
@@ -447,10 +510,10 @@ const HeroSection = () => {
                 })
                 changedObjects.push('Small Banner')
             }
-            
+
             console.log('Changed objects:', changedObjects)
             console.log('Content blocks to update:', contentBlocks)
-            
+
             // Only proceed if there are changes
             // if (contentBlocks.length === 0) {
             //     toast.push(
@@ -461,7 +524,7 @@ const HeroSection = () => {
             //     )
             //     return
             // }
-            
+
             // Build the update data structure
             const updateData = {
                 id: 1, // Hero section ID
@@ -469,20 +532,20 @@ const HeroSection = () => {
                 title: "Hero Section",
                 content_blocks: contentBlocks
             }
-            
+
             console.log('Final payload being sent:', updateData)
             console.log('Only these objects are being updated:', changedObjects)
-            
+
             const result = await updateHomeSection({
                 sectionId: 1,
                 updateData: updateData
             }).unwrap()
-            
+
             if (result.success) {
                 // Update initial values to current values after successful update
                 setInitialFormValues(values)
                 console.log('Initial values updated after successful save:', values)
-                
+
                 toast.push(
                     <Notification type="success" duration={2500} title="Success">
                         {result.message}
@@ -523,338 +586,370 @@ const HeroSection = () => {
                         onSubmit={onSubmit}
                         enableReinitialize={true}
                     >
-                    {({ values, setFieldValue, touched, errors, isSubmitting }) => (
-                        <Form>
-                            <FormContainer>
-                                {/* Header and Button Text Section */}
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                    {/* Left Column */}
-                                    <div className="space-y-4">
-                                        <FormItem
-                                            label="Header Text"
-                                            labelClass="text-[#495057] font-inter text-[14px] font-medium leading-normal"
-                                            invalid={(errors.headerText && touched.headerText) as boolean}
-                                            errorMessage={errors.headerText}
-                                        >
-                                            <Field
-                                                name="headerText"
-                                                component={Input}
-                                                className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                                                placeholder="Enter header text"
-                                            />
-                                        </FormItem>
-                                    </div>
-
-                                    {/* Right Column */}
-                                    <div className="space-y-4">
-                                        <FormItem
-                                            label="Sub Header Text"
-                                            labelClass="text-[#495057] font-inter text-[14px] font-medium leading-normal"
-                                            invalid={(errors.subHeaderText && touched.subHeaderText) as boolean}
-                                            errorMessage={errors.subHeaderText}
-                                        >
-                                            <Field
-                                                name="subHeaderText"
-                                                component={Input}
-                                                className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                                                placeholder="Enter sub header text"
-                                            />
-                                        </FormItem>
-                                    </div>
-                                </div>
-
-                                {/* Banner Images Section */}
-                                <div className="mb-6 rounded-[24px] border-[0.75px] border-[#CED4DA] p-4">
-                                    <div className="flex flex-col sm:flex-row  sm:justify-between !items-baseline mb-4 border-b border-[#CED4DA]">
-                                        <h3 className="text-[#495057] font-inter text-[14px] font-semibold leading-normal mb-[20px]">Banner Images</h3>
-                                        <Button
-                                            type="button"
-                                            onClick={handleAddBanner}
-                                            className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)]  text-white text-center font-inter text-[14px] font-medium leading-normal  !px-4 !py-1 "
-                                        >
-                                            Add New Banner
-                                        </Button>
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        {values.bannerImages.map((banner, index) => (
-                                            <div key={banner.id} className="flex items-center justify-between ">
-                                                <div className="flex items-center space-x-3">
-                                                    <div className="cursor-move text-gray-400 hover:text-gray-600">
-                                                        <img src="/img/images/grip-dots.svg" alt="grip-dots" className="w-5 h-5" />
-                                                    </div>
-                                                    <span className="text-gray-700 font-medium">{banner.name}</span>
-                                                </div>
-                                                <div className="flex items-center space-x-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleEditBanner(banner)}
-                                                        className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
-                                                    >
-                                                        <img src="/img/images/Edittable.svg" alt="grip-dots" className="w-5 h-5" />
-                                                    </button>
-                                                    <button type="button" className="p-1 text-gray-400 hover:text-green-600 transition-colors">
-                                                        <img src="/img/images/viewtable.svg" alt="grip-dots" className="w-5 h-5" />
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleDeleteClick(banner)}
-                                                        className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                                                    >
-                                                        <img src="/img/images/deatetable.svg" alt="grip-dots" className="w-5 h-5" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-
-
-                                {/* Small Banner Section */}
-                                <div className="mb-6">
-                                    <h3 className="text-[#495057] font-inter text-[14px] font-semibold leading-normal mb-[8px]">Small Banner</h3>
-                                    <div className="flex w-full">
-                                        <div className="flex flex-col w-full sm:flex-row sm:items-center sm:justify-between rounded-[24px] border-[0.75px] border-[#CED4DA] mr-[20px]">
-                                            <div className="flex-1 mb-3 sm:mb-0">
-                                                <span className="text-gray-700 font-medium pl-4">{values.smallBannerFile}</span>
-                                            </div>
-                                            <div className="flex flex-col sm:flex-row gap-3">
-                                                <label className="cursor-pointer">
-                                                    <input
-                                                        ref={smallBannerFileRef}
-                                                        type="file"
-                                                        accept="video/*"
-                                                        onChange={(e) => handleFileUpload(setFieldValue, e)}
-                                                        className="hidden"
+                        {({ values, setFieldValue, touched, errors, isSubmitting }) => (
+                            <Form>
+                                <FormContainer>
+                                    {/* Header and Button Text Section */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        {/* Left Column */}
+                                        <div className="space-y-4">
+                                            <FormItem
+                                                label="Header Text"
+                                                labelClass="text-[#495057] font-inter text-[14px] font-medium leading-normal"
+                                                invalid={(errors.headerText && touched.headerText) as boolean}
+                                                errorMessage={errors.headerText}
+                                            >
+                                                <div className="flex gap-3">
+                                                    <Field name="headerHeadingLevel">
+                                                        {({ field, form }: any) => (
+                                                            <Select
+                                                                {...field}
+                                                                options={headingLevelOptions}
+                                                                className="!w-[100px] !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                                                onChange={(option: any) => {
+                                                                    form.setFieldValue('headerHeadingLevel', option?.value || 'h1')
+                                                                }}
+                                                                value={headingLevelOptions.find(option => option.value === field.value)}
+                                                            />
+                                                        )}
+                                                    </Field>
+                                                    <Field
+                                                        name="headerText"
+                                                        component={Input}
+                                                        className="flex-1 !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                                        placeholder="Enter header text"
                                                     />
-                                                    <Button
-                                                        type="button"
-                                                        loading={isUploading}
-                                                        onClick={() => smallBannerFileRef.current?.click()}
-                                                        className="!bg-[#C5C5C5] !text-[#495057] !rounded-[24px] font-inter text-[14px] font-medium leading-normal"
-                                                    >
-                                                        {isUploading ? 'Uploading...' : 'Upload File'}
-                                                    </Button>
-                                                </label>
-                                            </div>
+
+                                                </div>
+                                            </FormItem>
+                                        </div>
+
+                                        {/* Right Column */}
+                                        <div className="space-y-4">
+                                            <FormItem
+                                                label="Sub Header Text"
+                                                labelClass="text-[#495057] font-inter text-[14px] font-medium leading-normal"
+                                                invalid={(errors.subHeaderText && touched.subHeaderText) as boolean}
+                                                errorMessage={errors.subHeaderText}
+                                            >
+                                                <div className="flex gap-3">
+                                                    <Field name="subHeaderHeadingLevel">
+                                                        {({ field, form }: any) => (
+                                                            <Select
+                                                                {...field}
+                                                                options={headingLevelOptions}
+                                                                className="!w-[100px] !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                                                onChange={(option: any) => {
+                                                                    form.setFieldValue('subHeaderHeadingLevel', option?.value || 'h2')
+                                                                }}
+                                                                value={headingLevelOptions.find(option => option.value === field.value)}
+                                                            />
+                                                        )}
+                                                    </Field>
+                                                    <Field
+                                                        name="subHeaderText"
+                                                        component={Input}
+                                                        className="flex-1 !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                                        placeholder="Enter sub header text"
+                                                    />
+
+                                                </div>
+                                            </FormItem>
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* Save Button */}
-                                <div className="flex justify-end">
-                                    <Button
-                                        type="submit"
-                                        loading={isSubmitting || isUpdating}
-                                        className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white px-4 py-2 font-medium transition-all duration-200"
-                                    >
-                                        {isSubmitting || isUpdating ? 'Saving...' : 'Save'}
-                                    </Button>
-                                </div>
-                            </FormContainer>
+                                    {/* Banner Images Section */}
+                                    <div className="mb-6 rounded-[24px] border-[0.75px] border-[#CED4DA] p-4">
+                                        <div className="flex flex-col sm:flex-row  sm:justify-between !items-baseline mb-4 border-b border-[#CED4DA]">
+                                            <h3 className="text-[#495057] font-inter text-[14px] font-semibold leading-normal mb-[20px]">Banner Images</h3>
+                                            <Button
+                                                type="button"
+                                                onClick={handleAddBanner}
+                                                className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)]  text-white text-center font-inter text-[14px] font-medium leading-normal  !px-4 !py-1 "
+                                            >
+                                                Add New Banner
+                                            </Button>
+                                        </div>
 
-                            {/* Banner Modal */}
-                            <Modal
-                                isOpen={isModalOpen}
-                                onRequestClose={handleModalClose}
-                                contentLabel="Hero Section Banner Image Modal"
-                                className="modal-content"
-                                overlayClassName="modal-overlay"
-                                style={{
-                                    content: {
-                                        position: 'fixed',
-                                        top: '50%',
-                                        left: '50%',
-                                        transform: 'translate(-50%, -50%)',
-                                        width: window.innerWidth >= 1024 ? '60%' : '95%',
-                                        maxWidth: '90vw',
-                                        maxHeight: '90vh',
-                                        borderRadius: '32px',
-                                        border: 'none',
-                                        padding: 0,
-                                        backgroundColor: 'white',
-                                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                                        overflow: 'auto',
-                                        margin: window.innerWidth >= 1024 ? `0 0 0 ${SIDE_NAV_WIDTH / 2}px` : '0'
-                                    },
-                                    overlay: {
-                                        position: 'fixed',
-                                        top: 0,
-                                        left: window.innerWidth >= 1024 ? `${SIDE_NAV_WIDTH}px` : '0',
-                                        right: 0,
-                                        bottom: 0,
-                                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                                        zIndex: 50
-                                    }
-                                }}
-                            >
-                                <div className="p-3 sm:p-4 md:p-6">
-                                    <div className="flex items-center relative mb-4 sm:mb-6">
-                                        <h3 className="text-[#495057] font-inter text-[14px] sm:text-[16px] md:text-[18px] font-semibold leading-normal flex-1 pr-8">
-                                            {editingBanner ? 
-                                                (editingBanner.id === '1' ? 'Edit Banner Video' : 'Edit Banner Image') : 
-                                                'Add New Banner Image'
-                                            }
-                                        </h3>
-                                        <button
-                                            type="button"
-                                            onClick={handleModalClose}
-                                            className="absolute right-0 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1"
-                                        >
-                                            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
+                                        <div className="space-y-3">
+                                            {values.bannerImages.map((banner, index) => (
+                                                <div key={banner.id} className="flex items-center justify-between ">
+                                                    <div className="flex items-center space-x-3">
+                                                        <div className="cursor-move text-gray-400 hover:text-gray-600">
+                                                            <img src="/img/images/grip-dots.svg" alt="grip-dots" className="w-5 h-5" />
+                                                        </div>
+                                                        <span className="text-gray-700 font-medium">{banner.name}</span>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleEditBanner(banner)}
+                                                            className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                                                        >
+                                                            <img src="/img/images/Edittable.svg" alt="grip-dots" className="w-5 h-5" />
+                                                        </button>
+                                                        <button type="button" className="p-1 text-gray-400 hover:text-green-600 transition-colors">
+                                                            <img src="/img/images/viewtable.svg" alt="grip-dots" className="w-5 h-5" />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDeleteClick(banner)}
+                                                            className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                                                        >
+                                                            <img src="/img/images/deatetable.svg" alt="grip-dots" className="w-5 h-5" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
 
-                                    <Formik
-                                        key={editingBanner?.id || 'new'} // Force re-render when editing different banner
-                                        initialValues={getBannerModalInitialValues()}
-                                        validationSchema={bannerModalValidationSchema}
-                                        onSubmit={(modalValues) => handleBannerModalSubmit(modalValues, setFieldValue, values.bannerImages)}
-                                    >
-                                        {({ values: modalValues, setFieldValue: modalSetFieldValue, touched, errors, isSubmitting }) => (
-                                            <Form>
-                                                <FormContainer>
-                                                    <div className="space-y-4 sm:space-y-6">
-                                                        <FormItem
-                                                            label={editingBanner && editingBanner.id === '1' ? "Banner Video Name" : "Banner Image Name"}
-                                                            labelClass="text-[#495057] font-inter text-[12px] sm:text-[14px] font-medium leading-normal"
-                                                            invalid={(errors.bannerImageName && touched.bannerImageName) as boolean}
-                                                            errorMessage={errors.bannerImageName}
-                                                        >
-                                                            <Field
-                                                                name="bannerImageName"
-                                                                component={Input}
-                                                                className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500 text-[12px] sm:text-[14px]"
-                                                                placeholder={editingBanner && editingBanner.id === '1' ? "Enter banner video name" : "Enter banner image name"}
-                                                            />
-                                                        </FormItem>
 
-                                                        <FormItem
-                                                            label={editingBanner && editingBanner.id === '1' ? "Video File" : "Image File"}
-                                                            labelClass="text-[#495057] font-inter text-[12px] sm:text-[14px] font-medium leading-normal"
-                                                            invalid={(errors.imageFile && touched.imageFile) as boolean}
-                                                            errorMessage={errors.imageFile}
-                                                        >
-                                                            <div className="w-full">
-                                                                <div className="flex flex-col w-full rounded-[24px] border-[0.75px] border-[#CED4DA] p-2 sm:p-3">
-                                                                    <div className="flex-1 mb-2">
-                                                                        <span className="text-gray-700 font-medium text-[12px] sm:text-[14px] break-all">{modalValues.imageFile}</span>
-                                                                    </div>
-                                                                    <div className="flex justify-end">
-                                                                        <label className="cursor-pointer">
-                                                                            <input
-                                                                                ref={bannerFileRef}
-                                                                                type="file"
-                                                                                accept={editingBanner && editingBanner.id === '1' ? "video/*" : "image/*"}
-                                                                                onChange={(e) => handleBannerFileUpload(modalSetFieldValue, e)}
-                                                                                className="hidden"
-                                                                            />
-                                                                            <Button
-                                                                                type="button"
-                                                                                loading={isUploading}
-                                                                                onClick={() => bannerFileRef.current?.click()}
-                                                                                className="!bg-[#C5C5C5] !text-[#495057] !rounded-[24px] font-inter text-[12px] sm:text-[14px] font-medium leading-normal !px-3 !py-1 sm:!px-4"
-                                                                            >
-                                                                                {isUploading ? 'Uploading...' : 'Upload File'}
-                                                                            </Button>
-                                                                        </label>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </FormItem>
-                                                    </div>
 
-                                                    <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 mt-4 sm:mt-6">
+                                    {/* Small Banner Section */}
+                                    <div className="mb-6">
+                                        <h3 className="text-[#495057] font-inter text-[14px] font-semibold leading-normal mb-[8px]">Small Banner</h3>
+                                        <div className="flex w-full">
+                                            <div className="flex flex-col w-full sm:flex-row sm:items-center sm:justify-between rounded-[24px] border-[0.75px] border-[#CED4DA] mr-[20px]">
+                                                <div className="flex-1 mb-3 sm:mb-0">
+                                                    <span className="text-gray-700 font-medium pl-4">{values.smallBannerFile}</span>
+                                                </div>
+                                                <div className="flex flex-col sm:flex-row gap-3">
+                                                    <label className="cursor-pointer">
+                                                        <input
+                                                            ref={smallBannerFileRef}
+                                                            type="file"
+                                                            accept="video/*"
+                                                            onChange={(e) => handleFileUpload(setFieldValue, e)}
+                                                            className="hidden"
+                                                        />
                                                         <Button
                                                             type="button"
-                                                            onClick={handleModalClose}
-                                                            className="!bg-[#C5C5C5] !text-[#495057] !rounded-[24px] font-inter text-[12px] sm:text-[14px] font-medium leading-normal !px-3 !py-2 sm:!px-4 w-full sm:w-auto order-2 sm:order-1"
+                                                            loading={isUploading}
+                                                            onClick={() => smallBannerFileRef.current?.click()}
+                                                            className="!bg-[#C5C5C5] !text-[#495057] !rounded-[24px] font-inter text-[14px] font-medium leading-normal"
                                                         >
-                                                            Cancel
+                                                            {isUploading ? 'Uploading...' : 'Upload File'}
                                                         </Button>
-                                                        <Button
-                                                            type="submit"
-                                                            loading={isSubmitting}
-                                                            className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white !px-3 !py-2 sm:!px-4 font-medium transition-all duration-200 text-[12px] sm:text-[14px] w-full sm:w-auto order-1 sm:order-2"
-                                                        >
-                                                            {isSubmitting ? (editingBanner ? 'Updating...' : 'Adding...') : (editingBanner ? 'Update' : 'Add')}
-                                                        </Button>
-                                                    </div>
-                                                </FormContainer>
-                                            </Form>
-                                        )}
-                                    </Formik>
-                                </div>
-                            </Modal>
-
-                            {/* Delete Confirmation Modal */}
-                            <Modal
-                                isOpen={isDeleteModalOpen}
-                                onRequestClose={handleDeleteCancel}
-                                contentLabel="Delete Banner Image Confirmation Modal"
-                                className="modal-content"
-                                overlayClassName="modal-overlay"
-                                style={{
-                                    content: {
-                                        position: 'fixed',
-                                        top: '50%',
-                                        left: '50%',
-                                        transform: 'translate(-50%, -50%)',
-                                        width: window.innerWidth >= 1024 ? '690px' : '90%',
-                                        maxWidth: '90vw',
-                                        maxHeight: '90vh',
-                                        borderRadius: '32px',
-                                        border: 'none',
-                                        padding: 0,
-                                        backgroundColor: 'white',
-                                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                                        overflow: 'auto',
-                                        margin: window.innerWidth >= 1024 ? `0 0 0 ${SIDE_NAV_WIDTH / 2}px` : '0'
-                                    },
-                                    overlay: {
-                                        position: 'fixed',
-                                        top: 0,
-                                        left: window.innerWidth >= 1024 ? `${SIDE_NAV_WIDTH}px` : '0',
-                                        right: 0,
-                                        bottom: 0,
-                                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                                        zIndex: 50
-                                    }
-                                }}
-                            >
-                                <div className="p-6 sm:p-8">
-                                    <div className="text-center">
-                                        <h3 className="text-[#495057] font-inter text-[18px] sm:text-[20px] font-semibold leading-normal mb-4">
-                                            Remove Banner Image
-                                        </h3>
-                                        <p className="text-[#6B7280] font-inter text-[14px] sm:text-[16px] leading-normal mb-6">
-                                            Could you please confirm if you want to remove this Banner Image?
-                                        </p>
-
-                                        <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
-                                            <Button
-                                                type="button"
-                                                onClick={handleDeleteCancel}
-                                                className="!bg-[#C5C5C5] !text-[#495057] !rounded-[24px] font-inter text-[14px] font-medium leading-normal !px-6 !py-2 w-full sm:w-auto order-2 sm:order-1"
-                                            >
-                                                Cancel
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                onClick={() => handleDeleteConfirm(setFieldValue, values.bannerImages)}
-                                                className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white !px-6 !py-2 font-medium transition-all duration-200 text-[14px] w-full sm:w-auto order-1 sm:order-2"
-                                            >
-                                                Remove
-                                            </Button>
+                                                    </label>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </Modal>
-                        </Form>
-                    )}
+
+                                    {/* Save Button */}
+                                    <div className="flex justify-end">
+                                        <Button
+                                            type="submit"
+                                            loading={isSubmitting || isUpdating}
+                                            className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white px-4 py-2 font-medium transition-all duration-200"
+                                        >
+                                            {isSubmitting || isUpdating ? 'Saving...' : 'Save'}
+                                        </Button>
+                                    </div>
+                                </FormContainer>
+
+                                {/* Banner Modal */}
+                                <Modal
+                                    isOpen={isModalOpen}
+                                    onRequestClose={handleModalClose}
+                                    contentLabel="Hero Section Banner Image Modal"
+                                    className="modal-content"
+                                    overlayClassName="modal-overlay"
+                                    style={{
+                                        content: {
+                                            position: 'fixed',
+                                            top: '50%',
+                                            left: '50%',
+                                            transform: 'translate(-50%, -50%)',
+                                            width: window.innerWidth >= 1024 ? '60%' : '95%',
+                                            maxWidth: '90vw',
+                                            maxHeight: '90vh',
+                                            borderRadius: '32px',
+                                            border: 'none',
+                                            padding: 0,
+                                            backgroundColor: 'white',
+                                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                                            overflow: 'auto',
+                                            margin: window.innerWidth >= 1024 ? `0 0 0 ${SIDE_NAV_WIDTH / 2}px` : '0'
+                                        },
+                                        overlay: {
+                                            position: 'fixed',
+                                            top: 0,
+                                            left: window.innerWidth >= 1024 ? `${SIDE_NAV_WIDTH}px` : '0',
+                                            right: 0,
+                                            bottom: 0,
+                                            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                                            zIndex: 50
+                                        }
+                                    }}
+                                >
+                                    <div className="p-3 sm:p-4 md:p-6">
+                                        <div className="flex items-center relative mb-4 sm:mb-6">
+                                            <h3 className="text-[#495057] font-inter text-[14px] sm:text-[16px] md:text-[18px] font-semibold leading-normal flex-1 pr-8">
+                                                {editingBanner ?
+                                                    (editingBanner.id === '1' ? 'Edit Banner Video' : 'Edit Banner Image') :
+                                                    'Add New Banner Image'
+                                                }
+                                            </h3>
+                                            <button
+                                                type="button"
+                                                onClick={handleModalClose}
+                                                className="absolute right-0 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1"
+                                            >
+                                                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </div>
+
+                                        <Formik
+                                            key={editingBanner?.id || 'new'} // Force re-render when editing different banner
+                                            initialValues={getBannerModalInitialValues()}
+                                            validationSchema={bannerModalValidationSchema}
+                                            onSubmit={(modalValues) => handleBannerModalSubmit(modalValues, setFieldValue, values.bannerImages)}
+                                        >
+                                            {({ values: modalValues, setFieldValue: modalSetFieldValue, touched, errors, isSubmitting }) => (
+                                                <Form>
+                                                    <FormContainer>
+                                                        <div className="space-y-4 sm:space-y-6">
+                                                            <FormItem
+                                                                label={editingBanner && editingBanner.id === '1' ? "Banner Video Name" : "Banner Image Name"}
+                                                                labelClass="text-[#495057] font-inter text-[12px] sm:text-[14px] font-medium leading-normal"
+                                                                invalid={(errors.bannerImageName && touched.bannerImageName) as boolean}
+                                                                errorMessage={errors.bannerImageName}
+                                                            >
+                                                                <Field
+                                                                    name="bannerImageName"
+                                                                    component={Input}
+                                                                    className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500 text-[12px] sm:text-[14px]"
+                                                                    placeholder={editingBanner && editingBanner.id === '1' ? "Enter banner video name" : "Enter banner image name"}
+                                                                />
+                                                            </FormItem>
+
+                                                            <FormItem
+                                                                label={editingBanner && editingBanner.id === '1' ? "Video File" : "Image File"}
+                                                                labelClass="text-[#495057] font-inter text-[12px] sm:text-[14px] font-medium leading-normal"
+                                                                invalid={(errors.imageFile && touched.imageFile) as boolean}
+                                                                errorMessage={errors.imageFile}
+                                                            >
+                                                                <div className="w-full">
+                                                                    <div className="flex flex-col w-full rounded-[24px] border-[0.75px] border-[#CED4DA] p-2 sm:p-3">
+                                                                        <div className="flex-1 mb-2">
+                                                                            <span className="text-gray-700 font-medium text-[12px] sm:text-[14px] break-all">{modalValues.imageFile}</span>
+                                                                        </div>
+                                                                        <div className="flex justify-end">
+                                                                            <label className="cursor-pointer">
+                                                                                <input
+                                                                                    ref={bannerFileRef}
+                                                                                    type="file"
+                                                                                    accept={editingBanner && editingBanner.id === '1' ? "video/*" : "image/*"}
+                                                                                    onChange={(e) => handleBannerFileUpload(modalSetFieldValue, e)}
+                                                                                    className="hidden"
+                                                                                />
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    loading={isUploading}
+                                                                                    onClick={() => bannerFileRef.current?.click()}
+                                                                                    className="!bg-[#C5C5C5] !text-[#495057] !rounded-[24px] font-inter text-[12px] sm:text-[14px] font-medium leading-normal !px-3 !py-1 sm:!px-4"
+                                                                                >
+                                                                                    {isUploading ? 'Uploading...' : 'Upload File'}
+                                                                                </Button>
+                                                                            </label>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </FormItem>
+                                                        </div>
+
+                                                        <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 mt-4 sm:mt-6">
+                                                            <Button
+                                                                type="button"
+                                                                onClick={handleModalClose}
+                                                                className="!bg-[#C5C5C5] !text-[#495057] !rounded-[24px] font-inter text-[12px] sm:text-[14px] font-medium leading-normal !px-3 !py-2 sm:!px-4 w-full sm:w-auto order-2 sm:order-1"
+                                                            >
+                                                                Cancel
+                                                            </Button>
+                                                            <Button
+                                                                type="submit"
+                                                                loading={isSubmitting}
+                                                                className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white !px-3 !py-2 sm:!px-4 font-medium transition-all duration-200 text-[12px] sm:text-[14px] w-full sm:w-auto order-1 sm:order-2"
+                                                            >
+                                                                {isSubmitting ? (editingBanner ? 'Updating...' : 'Adding...') : (editingBanner ? 'Update' : 'Add')}
+                                                            </Button>
+                                                        </div>
+                                                    </FormContainer>
+                                                </Form>
+                                            )}
+                                        </Formik>
+                                    </div>
+                                </Modal>
+
+                                {/* Delete Confirmation Modal */}
+                                <Modal
+                                    isOpen={isDeleteModalOpen}
+                                    onRequestClose={handleDeleteCancel}
+                                    contentLabel="Delete Banner Image Confirmation Modal"
+                                    className="modal-content"
+                                    overlayClassName="modal-overlay"
+                                    style={{
+                                        content: {
+                                            position: 'fixed',
+                                            top: '50%',
+                                            left: '50%',
+                                            transform: 'translate(-50%, -50%)',
+                                            width: window.innerWidth >= 1024 ? '690px' : '90%',
+                                            maxWidth: '90vw',
+                                            maxHeight: '90vh',
+                                            borderRadius: '32px',
+                                            border: 'none',
+                                            padding: 0,
+                                            backgroundColor: 'white',
+                                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                                            overflow: 'auto',
+                                            margin: window.innerWidth >= 1024 ? `0 0 0 ${SIDE_NAV_WIDTH / 2}px` : '0'
+                                        },
+                                        overlay: {
+                                            position: 'fixed',
+                                            top: 0,
+                                            left: window.innerWidth >= 1024 ? `${SIDE_NAV_WIDTH}px` : '0',
+                                            right: 0,
+                                            bottom: 0,
+                                            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                                            zIndex: 50
+                                        }
+                                    }}
+                                >
+                                    <div className="p-6 sm:p-8">
+                                        <div className="text-center">
+                                            <h3 className="text-[#495057] font-inter text-[18px] sm:text-[20px] font-semibold leading-normal mb-4">
+                                                Remove Banner Image
+                                            </h3>
+                                            <p className="text-[#6B7280] font-inter text-[14px] sm:text-[16px] leading-normal mb-6">
+                                                Could you please confirm if you want to remove this Banner Image?
+                                            </p>
+
+                                            <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+                                                <Button
+                                                    type="button"
+                                                    onClick={handleDeleteCancel}
+                                                    className="!bg-[#C5C5C5] !text-[#495057] !rounded-[24px] font-inter text-[14px] font-medium leading-normal !px-6 !py-2 w-full sm:w-auto order-2 sm:order-1"
+                                                >
+                                                    Cancel
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    onClick={() => handleDeleteConfirm(setFieldValue, values.bannerImages)}
+                                                    className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white !px-6 !py-2 font-medium transition-all duration-200 text-[14px] w-full sm:w-auto order-1 sm:order-2"
+                                                >
+                                                    Remove
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </Modal>
+                            </Form>
+                        )}
                     </Formik>
                 )}
             </div>
