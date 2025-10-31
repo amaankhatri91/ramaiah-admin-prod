@@ -362,18 +362,17 @@ const OurStorySection = () => {
                         }]
                     }
                     
-                    // Add media files if icon changed or alt text changed
-                    if ((iconChanged || altTextChanged) && box.mediaFileId) {
-                        // Find the existing media file to get its ID for update
-                        const existingMediaFile: any = correspondingBlock.media_files?.[0] // Story boxes typically have one media file
-                        
+                    // Always include media files with alt_text when there are any changes
+                    // This ensures alt_text is always sent in the payload
+                    const existingMediaFile: any = correspondingBlock.media_files?.[0] // Story boxes typically have one media file
+                    if (existingMediaFile?.id || box.mediaFileId) {
                         contentBlock.media_files = [{
                             id: existingMediaFile?.id, // Use existing media file ID for update (like banner images)
                             content_block_id: correspondingBlock.id,
-                            media_file_id: box.mediaFileId,
+                            media_file_id: box.mediaFileId || existingMediaFile?.media_file?.id,
                             media_type: "icon", // Story box icons are used as icons
                             display_order: 1,
-                            alt_text: box.altText || '' // Include alt text in the update
+                            alt_text: box.altText || '' // Always include alt text from the Alt Text field
                         }]
                     }
                     

@@ -352,18 +352,17 @@ const AccreditationsSection = () => {
                             contentBlock.id = existingBlock.id
                         }
                         
-                        // Add media files if media_file_id exists (uploaded image) or alt text changed
-                        if (certificate.media_file_id || altTextChanged) {
-                            // Find the existing media file to get its ID for update
-                            const existingMediaFile = existingBlock?.media_files?.[0]
-                            
+                        // Always include media files with alt_text when there are any changes
+                        // This ensures alt_text is always sent in the payload
+                        const existingMediaFile = existingBlock?.media_files?.[0]
+                        if (existingMediaFile?.id || certificate.media_file_id) {
                             contentBlock.media_files = [{
                                 id: existingMediaFile?.id || Date.now(), // Use existing ID or generate new one
                                 content_block_id: existingBlock?.id || null,
                                 media_file_id: certificate.media_file_id || existingMediaFile?.media_file?.id,
                                 media_type: "primary", // Certificates are used as primary media
                                 display_order: index + 1,
-                                alt_text: certificate.altText || '' // Include alt text in the update
+                                alt_text: certificate.altText || '' // Always include alt text from the Alt Text field
                             }]
                         }
                         

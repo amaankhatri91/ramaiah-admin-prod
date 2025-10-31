@@ -266,18 +266,17 @@ const QuickLinksSection = () => {
                         contentBlock.content = link.link
                     }
                     
-                    // Add media files if icon changed or alt text changed
-                    if ((iconChanged || altTextChanged) && link.mediaFileId) {
-                        // Find the existing media file to get its ID for update
-                        const existingMediaFile: any = existingBlock.media_files?.[0] // Quick links typically have one media file
-                        
+                    // Always include media files with alt_text when there are any changes
+                    // This ensures alt_text is always sent in the payload
+                    const existingMediaFile: any = existingBlock.media_files?.[0] // Quick links typically have one media file
+                    if (existingMediaFile?.id || link.mediaFileId) {
                         contentBlock.media_files = [{
                             id: existingMediaFile?.id, // Use existing media file ID for update (like banner images)
                             content_block_id: existingBlock.id,
-                            media_file_id: link.mediaFileId,
+                            media_file_id: link.mediaFileId || existingMediaFile?.media_file?.id,
                             media_type: "icon", // Quick link icons are used as icons
                             display_order: 1,
-                            alt_text: link.altText || '' // Include alt text in the update
+                            alt_text: link.altText || '' // Always include alt text from the Alt Text field
                         }]
                     }
                     

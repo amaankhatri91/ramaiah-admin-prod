@@ -281,8 +281,10 @@ const OurJourneySection = () => {
                 overallChanged: uploadFileOverallChanged
             })
             
-            if (uploadFileOverallChanged && (values.uploadFileMediaId || altTextChanged)) {
-                // Use existing media_file_id if not changed, but alt text changed
+            // Always include media files with alt_text when there are any changes
+            // This ensures alt_text is always sent in the payload
+            if (uploadFileOverallChanged) {
+                // Use existing media_file_id if not changed, but always include alt text
                 const mediaFileIdToUse = values.uploadFileMediaId || imageBlock.media_files?.[0]?.media_file?.id
                 
                 updatedContentBlocks.push({
@@ -297,7 +299,7 @@ const OurJourneySection = () => {
                         media_file_id: mediaFileIdToUse,
                         media_type: "primary",
                         display_order: 1,
-                        alt_text: values.altText || '' // Include alt text in the update
+                        alt_text: values.altText || '' // Always include alt text from the Alt Text field
                     }]
                 })
                 changedObjects.push('Upload File')
