@@ -261,6 +261,11 @@ const QuickLinksSection = () => {
                         contentBlock.custom_css = customCss
                     }
                     
+                    // Add field_tag with heading level value
+                    if (link.headingLevel) {
+                        contentBlock.field_tag = link.headingLevel
+                    }
+                    
                     // Add content if link changed
                     if (linkChanged) {
                         contentBlock.content = link.link

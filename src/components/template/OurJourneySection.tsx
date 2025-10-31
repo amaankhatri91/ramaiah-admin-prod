@@ -244,7 +244,8 @@ const OurJourneySection = () => {
                     title: values.headerText, // Update the title field
                     content: titleBlock.content,
                     display_order: titleBlock.display_order,
-                    custom_css: customCss
+                    custom_css: customCss,
+                    field_tag: values.headerTextHeadingLevel // Add field_tag with heading level value
                 })
                 changedObjects.push('Header Text')
             }

@@ -285,6 +285,7 @@ const AccreditationsSection = () => {
                         title: values.headerText,
                         content: values.headerText,
                         custom_css: customCss,
+                        field_tag: values.headerTextHeadingLevel, // Add field_tag with heading level value
                         media_files: []
                     })
                 } else {
@@ -294,6 +295,7 @@ const AccreditationsSection = () => {
                         title: values.headerText,
                         content: values.headerText,
                         custom_css: customCss,
+                        field_tag: values.headerTextHeadingLevel, // Add field_tag with heading level value
                         media_files: []
                     })
                 }
@@ -344,7 +346,8 @@ const AccreditationsSection = () => {
                             block_type: "image",
                             title: certificate.name,
                             content: certificate.name,
-                            custom_css: customCss
+                            custom_css: customCss,
+                            field_tag: certificate.nameHeadingLevel // Add field_tag with heading level value
                         }
                         
                         // Add ID if updating existing block

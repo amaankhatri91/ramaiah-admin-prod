@@ -290,7 +290,8 @@ const OurStorySection = () => {
                     block_type: 'text',
                     title: values.headerText, // Use the header text as the title
                     content: values.headerText,
-                    custom_css: customCss
+                    custom_css: customCss,
+                    field_tag: values.headerTextHeadingLevel // Add field_tag with heading level value
                 })
                 changedObjects.push('Header Text')
             }
@@ -353,6 +354,7 @@ const OurStorySection = () => {
                         title: box.header, // Use the box header as the title
                         content: box.header, // Update the content with new header
                         custom_css: customCss,
+                        field_tag: box.headerHeadingLevel, // Add field_tag with header heading level value
                         statistics: [{
                             id: correspondingBlock.statistics?.[0]?.id || 0,
                             content_block_id: correspondingBlock.id,

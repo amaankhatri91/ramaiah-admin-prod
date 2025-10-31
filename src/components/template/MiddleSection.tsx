@@ -273,7 +273,8 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
                         title: values.headerText,
                         content: values.headerText,
                         display_order: headerBlock.display_order,
-                        custom_css: customCss
+                        custom_css: customCss,
+                        field_tag: values.headerTextHeadingLevel // Add field_tag with heading level value
                     })
                     console.log('Header block updated:', updatedContentBlocks)
                 } else {
@@ -282,7 +283,8 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
                         block_type: "text",
                         title: values.headerText,
                         content: values.headerText,
-                        custom_css: customCss
+                        custom_css: customCss,
+                        field_tag: values.headerTextHeadingLevel // Add field_tag with heading level value
                     })
                 }
                 changedObjects.push('Header Text')

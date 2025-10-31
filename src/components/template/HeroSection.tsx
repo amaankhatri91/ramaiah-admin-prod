@@ -401,7 +401,8 @@ const HeroSection = () => {
                     block_type: headlineBlock.block_type,
                     title: headlineBlock.title,
                     content: values.headerText,
-                    custom_css: customCss
+                    custom_css: customCss,
+                    field_tag: values.headerHeadingLevel // Add field_tag with heading level value
                 })
                 changedObjects.push('Hero Text')
             }
@@ -436,7 +437,8 @@ const HeroSection = () => {
                     block_type: subtitleBlock.block_type,
                     title: subtitleBlock.title,
                     content: values.subHeaderText,
-                    custom_css: customCss
+                    custom_css: customCss,
+                    field_tag: values.subHeaderHeadingLevel // Add field_tag with heading level value
                 })
                 changedObjects.push('Sub Header Text')
             }
