@@ -15,6 +15,7 @@ interface QuickLink {
     icon: string
     mediaFileId?: number
     headingLevel?: string
+    altText?: string
 }
 
 type QuickLinksFormSchema = {
@@ -73,12 +74,12 @@ const QuickLinksSection = () => {
         if (!contentBlocks || contentBlocks.length === 0) {
             return {
                 quickLinks: [
-                    { id: '1', name: 'Book OPD Appointments (9 am - 5 pm)', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' },
-                    { id: '2', name: 'Book Prime Clinic Appointments (5 pm - 8 pm)', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' },
-                    { id: '3', name: 'Book Video Consultation', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' },
-                    { id: '4', name: 'Book Radiology Tests', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' },
-                    { id: '5', name: 'Book Home Sample Collection', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' },
-                    { id: '6', name: 'Book Home Physiotherapy', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' }
+                    { id: '1', name: 'Book OPD Appointments (9 am - 5 pm)', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3', altText: '' },
+                    { id: '2', name: 'Book Prime Clinic Appointments (5 pm - 8 pm)', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3', altText: '' },
+                    { id: '3', name: 'Book Video Consultation', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3', altText: '' },
+                    { id: '4', name: 'Book Radiology Tests', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3', altText: '' },
+                    { id: '5', name: 'Book Home Sample Collection', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3', altText: '' },
+                    { id: '6', name: 'Book Home Physiotherapy', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3', altText: '' }
                 ]
             }
         }
@@ -86,28 +87,32 @@ const QuickLinksSection = () => {
         const quickLinkBlocks = contentBlocks.filter((block: ContentBlock) => block.section_id === 2) || []
         const quickLinksData = parseQuickLinksSection(contentBlocks)
         
-        // Map quick links with heading levels from blocks
+        // Map quick links with heading levels and alt text from blocks
         const quickLinksWithHeadingLevels = quickLinksData.map((link, index) => {
             const block = quickLinkBlocks[index]
+            const altText = block?.media_files?.[0]?.media_file?.alt_text || ''
+            const mediaFileId = block?.media_files?.[0]?.media_file?.id
             return {
                 ...link,
-                headingLevel: getHeadingLevel(block, 'h3')
+                headingLevel: getHeadingLevel(block, 'h3'),
+                altText: altText,
+                mediaFileId: mediaFileId
             }
         })
         
         return {
             quickLinks: quickLinksWithHeadingLevels.length > 0 ? quickLinksWithHeadingLevels : [
-                { id: '1', name: 'Book OPD Appointments (9 am - 5 pm)', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' },
-                { id: '2', name: 'Book Prime Clinic Appointments (5 pm - 8 pm)', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' },
-                { id: '3', name: 'Book Video Consultation', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' },
-                { id: '4', name: 'Book Radiology Tests', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' },
-                { id: '5', name: 'Book Home Sample Collection', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' },
-                { id: '6', name: 'Book Home Physiotherapy', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3' }
+                { id: '1', name: 'Book OPD Appointments (9 am - 5 pm)', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3', altText: '' },
+                { id: '2', name: 'Book Prime Clinic Appointments (5 pm - 8 pm)', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3', altText: '' },
+                { id: '3', name: 'Book Video Consultation', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3', altText: '' },
+                { id: '4', name: 'Book Radiology Tests', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3', altText: '' },
+                { id: '5', name: 'Book Home Sample Collection', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3', altText: '' },
+                { id: '6', name: 'Book Home Physiotherapy', link: '', icon: 'icon_01.svg', mediaFileId: undefined, headingLevel: 'h3', altText: '' }
             ]
         }
     }
 
-    const handleQuickLinkChange = (setFieldValue: any, quickLinks: QuickLink[], id: string, field: 'name' | 'link' | 'icon' | 'headingLevel', value: string) => {
+    const handleQuickLinkChange = (setFieldValue: any, quickLinks: QuickLink[], id: string, field: 'name' | 'link' | 'icon' | 'headingLevel' | 'altText', value: string) => {
         const updatedLinks = quickLinks.map(link => 
             link.id === id ? { ...link, [field]: value } : link
         )
@@ -150,12 +155,13 @@ const QuickLinksSection = () => {
                     finalIconName = responseData.filePath
                 }
                 
-                // Update the icon name and media file ID in one operation
+                // Update the icon name, media file ID, and preserve alt text in one operation
                 const finalUpdatedLinks = quickLinks.map(link => 
                     link.id === id ? { 
                         ...link, 
                         icon: finalIconName,
-                        mediaFileId: responseData?.savedMedia?.id 
+                        mediaFileId: responseData?.savedMedia?.id,
+                        altText: responseData?.savedMedia?.alt_text || link.altText || ''
                     } : link
                 )
                 setFieldValue('quickLinks', finalUpdatedLinks)
@@ -225,13 +231,16 @@ const QuickLinksSection = () => {
                 const iconChanged = link.mediaFileId !== initialLink?.mediaFileId
                 // Check if heading level changed
                 const headingLevelChanged = link.headingLevel !== initialLink?.headingLevel
+                // Check if alt text changed
+                const altTextChanged = link.altText !== initialLink?.altText
                 
-                if (nameChanged || linkChanged || iconChanged || headingLevelChanged) {
+                if (nameChanged || linkChanged || iconChanged || headingLevelChanged || altTextChanged) {
                     console.log(`Quick Link ${index + 1} changed:`, {
                         name: { current: link.name, initial: initialLink?.name, changed: nameChanged },
                         link: { current: link.link, initial: initialLink?.link, changed: linkChanged },
                         icon: { current: link.mediaFileId, initial: initialLink?.mediaFileId, changed: iconChanged },
-                        headingLevel: { current: link.headingLevel, initial: initialLink?.headingLevel, changed: headingLevelChanged }
+                        headingLevel: { current: link.headingLevel, initial: initialLink?.headingLevel, changed: headingLevelChanged },
+                        altText: { current: link.altText, initial: initialLink?.altText, changed: altTextChanged }
                     })
                     
                     const contentBlock: any = {
@@ -257,8 +266,8 @@ const QuickLinksSection = () => {
                         contentBlock.content = link.link
                     }
                     
-                    // Add media files if icon changed
-                    if (iconChanged && link.mediaFileId) {
+                    // Add media files if icon changed or alt text changed
+                    if ((iconChanged || altTextChanged) && link.mediaFileId) {
                         // Find the existing media file to get its ID for update
                         const existingMediaFile: any = existingBlock.media_files?.[0] // Quick links typically have one media file
                         
@@ -267,7 +276,8 @@ const QuickLinksSection = () => {
                             content_block_id: existingBlock.id,
                             media_file_id: link.mediaFileId,
                             media_type: "icon", // Quick link icons are used as icons
-                            display_order: 1
+                            display_order: 1,
+                            alt_text: link.altText || '' // Include alt text in the update
                         }]
                     }
                     
@@ -446,6 +456,18 @@ const QuickLinksSection = () => {
                                                         </div>
                                                     </div>
                                                 </div>
+                                                {/* Alt Text Input */}
+                                                <FormItem
+                                                    label="Alt Text"
+                                                    labelClass="text-[#495057] font-inter text-[14px] font-medium leading-normal mt-3"
+                                                >
+                                                    <Input
+                                                        value={link.altText || ''}
+                                                        onChange={(e) => handleQuickLinkChange(setFieldValue, values.quickLinks, link.id, 'altText', e.target.value)}
+                                                        className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                                        placeholder="Enter image alt text"
+                                                    />
+                                                </FormItem>
                                             </div>
                                         </div>
                                     ))}

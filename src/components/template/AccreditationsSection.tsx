@@ -14,6 +14,7 @@ interface Certificate {
     nameHeadingLevel: string
     image: string
     media_file_id?: number
+    altText?: string
 }
 
 type AccreditationsFormSchema = {
@@ -78,10 +79,10 @@ const AccreditationsSection = () => {
                 headerText: 'Our Accreditations & Certifications',
                 headerTextHeadingLevel: 'h1',
                 certificates: [
-                    { id: '1', name: 'JCI', nameHeadingLevel: 'h2', image: 'JCI_Certificate.png' },
-                    { id: '2', name: 'JCI', nameHeadingLevel: 'h2', image: 'JCI_Certificate.png' },
-                    { id: '3', name: 'JCI', nameHeadingLevel: 'h2', image: 'JCI_Certificate.png' },
-                    { id: '4', name: 'JCI', nameHeadingLevel: 'h2', image: 'JCI_Certificate.png' }
+                    { id: '1', name: 'JCI', nameHeadingLevel: 'h2', image: 'JCI_Certificate.png', altText: '' },
+                    { id: '2', name: 'JCI', nameHeadingLevel: 'h2', image: 'JCI_Certificate.png', altText: '' },
+                    { id: '3', name: 'JCI', nameHeadingLevel: 'h2', image: 'JCI_Certificate.png', altText: '' },
+                    { id: '4', name: 'JCI', nameHeadingLevel: 'h2', image: 'JCI_Certificate.png', altText: '' }
                 ]
             }
         }
@@ -96,17 +97,22 @@ const AccreditationsSection = () => {
         
         // Get certificates from image block type
         const imageBlocks = accreditationBlocks.filter((block: ContentBlock) => block.block_type === 'image')
-        const certificates = imageBlocks.length > 0 ? imageBlocks.map((block, index) => ({
-            id: block.id.toString(),
-            name: block.title,
-            nameHeadingLevel: getHeadingLevel(block, 'h2'),
-            image: block.media_files?.[0]?.media_file?.original_filename || 'certificate.png',
-            media_file_id: block.media_files?.[0]?.media_file?.id
-        })) : [
-            { id: '1', name: 'JCI', nameHeadingLevel: 'h2', image: 'JCI_Certificate.png' },
-            { id: '2', name: 'JCI', nameHeadingLevel: 'h2', image: 'JCI_Certificate.png' },
-            { id: '3', name: 'JCI', nameHeadingLevel: 'h2', image: 'JCI_Certificate.png' },
-            { id: '4', name: 'JCI', nameHeadingLevel: 'h2', image: 'JCI_Certificate.png' }
+        const certificates = imageBlocks.length > 0 ? imageBlocks.map((block, index) => {
+            const altText = block?.media_files?.[0]?.media_file?.alt_text || ''
+            const mediaFileId = block?.media_files?.[0]?.media_file?.id
+            return {
+                id: block.id.toString(),
+                name: block.title,
+                nameHeadingLevel: getHeadingLevel(block, 'h2'),
+                image: block.media_files?.[0]?.media_file?.original_filename || 'certificate.png',
+                media_file_id: mediaFileId,
+                altText: altText
+            }
+        }) : [
+            { id: '1', name: 'JCI', nameHeadingLevel: 'h2', image: 'JCI_Certificate.png', altText: '' },
+            { id: '2', name: 'JCI', nameHeadingLevel: 'h2', image: 'JCI_Certificate.png', altText: '' },
+            { id: '3', name: 'JCI', nameHeadingLevel: 'h2', image: 'JCI_Certificate.png', altText: '' },
+            { id: '4', name: 'JCI', nameHeadingLevel: 'h2', image: 'JCI_Certificate.png', altText: '' }
         ]
         
         return {
@@ -116,7 +122,7 @@ const AccreditationsSection = () => {
         }
     }
 
-    const handleCertificateChange = (setFieldValue: any, certificates: Certificate[], id: string, field: 'name' | 'image' | 'nameHeadingLevel', value: string) => {
+    const handleCertificateChange = (setFieldValue: any, certificates: Certificate[], id: string, field: 'name' | 'image' | 'nameHeadingLevel' | 'altText', value: string) => {
         const updatedCertificates = certificates.map(cert => 
             cert.id === id ? { ...cert, [field]: value } : cert
         )
@@ -140,7 +146,7 @@ const AccreditationsSection = () => {
                     { placement: 'top-end' }
                 )
                 
-                // Update the certificate with the original filename and media file ID from the response
+                // Update the certificate with the original filename, media file ID, and alt text from the response
                 const responseData = result.data as any
                 const updatedCertificates = certificates.map(cert => {
                     if (cert.id === id) {
@@ -159,6 +165,9 @@ const AccreditationsSection = () => {
                             updatedCert.media_file_id = responseData.savedMedia.id
                             console.log('Certificate file upload - savedMedia.id:', responseData.savedMedia.id)
                         }
+                        
+                        // Update alt text from response or preserve existing
+                        updatedCert.altText = responseData?.savedMedia?.alt_text || cert.altText || ''
                         
                         return updatedCert
                     }
@@ -194,7 +203,8 @@ const AccreditationsSection = () => {
             id: Date.now().toString(),
             name: 'JCI',
             nameHeadingLevel: 'h2',
-            image: 'JCI_Certificate.png'
+            image: 'JCI_Certificate.png',
+            altText: ''
         }
         setFieldValue('certificates', [...certificates, newCertificate])
     }
@@ -306,7 +316,8 @@ const AccreditationsSection = () => {
                     const nameChanged = !initialCertificate || initialCertificate.name !== certificate.name
                     const nameHeadingLevelChanged = !initialCertificate || initialCertificate.nameHeadingLevel !== certificate.nameHeadingLevel
                     const mediaFileIdChanged = !initialCertificate || initialCertificate.media_file_id !== certificate.media_file_id
-                    const hasChanges = nameChanged || nameHeadingLevelChanged || mediaFileIdChanged
+                    const altTextChanged = !initialCertificate || initialCertificate.altText !== certificate.altText
+                    const hasChanges = nameChanged || nameHeadingLevelChanged || mediaFileIdChanged || altTextChanged
                     
                     if (hasChanges) {
                         // Find existing image block for this certificate by ID (titles may repeat like "JCI")
@@ -341,17 +352,18 @@ const AccreditationsSection = () => {
                             contentBlock.id = existingBlock.id
                         }
                         
-                        // Add media files if media_file_id exists (uploaded image)
-                        if (certificate.media_file_id) {
+                        // Add media files if media_file_id exists (uploaded image) or alt text changed
+                        if (certificate.media_file_id || altTextChanged) {
                             // Find the existing media file to get its ID for update
                             const existingMediaFile = existingBlock?.media_files?.[0]
                             
                             contentBlock.media_files = [{
                                 id: existingMediaFile?.id || Date.now(), // Use existing ID or generate new one
                                 content_block_id: existingBlock?.id || null,
-                                media_file_id: certificate.media_file_id,
+                                media_file_id: certificate.media_file_id || existingMediaFile?.media_file?.id,
                                 media_type: "primary", // Certificates are used as primary media
-                                display_order: index + 1
+                                display_order: index + 1,
+                                alt_text: certificate.altText || '' // Include alt text in the update
                             }]
                         }
                         
@@ -545,6 +557,18 @@ const AccreditationsSection = () => {
                                                         </div>
                                                     </div>
                                                 </div>
+                                                {/* Alt Text Input */}
+                                                <FormItem
+                                                    label="Alt Text"
+                                                    labelClass="text-[#495057] font-inter text-[14px] font-medium leading-normal mt-3"
+                                                >
+                                                    <Input
+                                                        value={certificate.altText || ''}
+                                                        onChange={(e) => handleCertificateChange(setFieldValue, values.certificates, certificate.id, 'altText', e.target.value)}
+                                                        className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                                        placeholder="Enter image alt text"
+                                                    />
+                                                </FormItem>
                                             </div>
                                         </div>
                                     ))}

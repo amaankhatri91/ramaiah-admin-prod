@@ -39,13 +39,15 @@ const PageSettingsSection = () => {
 
     const onSubmit = async (values: PageSettingsFormSchema) => {
         try {
-            // Map form values to API payload
+            // Map form values to API payload wrapped in updateData
             const payload = {
-                page_type: values.pageType,
-                slug: values.pageName,
-                meta_title: values.seoTitle,
-                meta_keywords: values.seoKeyword,
-                meta_description: values.seoDescription,
+                updateData: {
+                    page_type: values.pageType,
+                    slug: values.pageName,
+                    meta_title: values.seoTitle,
+                    meta_description: values.seoDescription,
+                    meta_keywords: values.seoKeyword,
+                }
             }
 
             console.log('Page settings to save:', payload)
@@ -108,6 +110,7 @@ const PageSettingsSection = () => {
                                             component={Input}
                                             className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
                                             placeholder="Enter page type"
+                                            disabled={true}
                                         />
                                     </FormItem>
                                 </div>
@@ -119,12 +122,14 @@ const PageSettingsSection = () => {
                                         labelClass="text-[#495057] font-inter text-[14px] font-medium leading-normal"
                                         invalid={(errors.pageName && touched.pageName) as boolean}
                                         errorMessage={errors.pageName}
+                                       
                                     >
                                         <Field
                                             name="pageName"
                                             component={Input}
                                             className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
                                             placeholder="Enter page name"
+                                            disabled={true}
                                         />
                                     </FormItem>
                                 </div>

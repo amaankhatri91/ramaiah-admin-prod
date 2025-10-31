@@ -16,6 +16,7 @@ interface StoryBox {
     subHeaderHeadingLevel: string
     icon: string
     mediaFileId?: number
+    altText?: string
 }
 
 type OurStoryFormSchema = {
@@ -99,13 +100,13 @@ const OurStorySection = () => {
                 headerTextHeadingLevel: 'h1',
                 subHeaderText: "",
                 storyBoxes: [
-                    { id: '1', header: '550+', headerHeadingLevel: 'h2', subHeader: 'Beds', subHeaderHeadingLevel: 'h3', icon: 'icon_01.svg' },
-                    { id: '2', header: '550+', headerHeadingLevel: 'h2', subHeader: 'Beds', subHeaderHeadingLevel: 'h3', icon: 'icon_01.svg' },
-                    { id: '3', header: '550+', headerHeadingLevel: 'h2', subHeader: 'Beds', subHeaderHeadingLevel: 'h3', icon: 'icon_01.svg' },
-                    { id: '4', header: '550+', headerHeadingLevel: 'h2', subHeader: 'Beds', subHeaderHeadingLevel: 'h3', icon: 'icon_01.svg' },
-                    { id: '5', header: '550+', headerHeadingLevel: 'h2', subHeader: 'Beds', subHeaderHeadingLevel: 'h3', icon: 'icon_01.svg' },
-                    { id: '6', header: '550+', headerHeadingLevel: 'h2', subHeader: 'Beds', subHeaderHeadingLevel: 'h3', icon: 'icon_01.svg' },
-                    { id: '7', header: '550+', headerHeadingLevel: 'h2', subHeader: 'Beds', subHeaderHeadingLevel: 'h3', icon: 'icon_01.svg' }
+                    { id: '1', header: '550+', headerHeadingLevel: 'h2', subHeader: 'Beds', subHeaderHeadingLevel: 'h3', icon: 'icon_01.svg', altText: '' },
+                    { id: '2', header: '550+', headerHeadingLevel: 'h2', subHeader: 'Beds', subHeaderHeadingLevel: 'h3', icon: 'icon_01.svg', altText: '' },
+                    { id: '3', header: '550+', headerHeadingLevel: 'h2', subHeader: 'Beds', subHeaderHeadingLevel: 'h3', icon: 'icon_01.svg', altText: '' },
+                    { id: '4', header: '550+', headerHeadingLevel: 'h2', subHeader: 'Beds', subHeaderHeadingLevel: 'h3', icon: 'icon_01.svg', altText: '' },
+                    { id: '5', header: '550+', headerHeadingLevel: 'h2', subHeader: 'Beds', subHeaderHeadingLevel: 'h3', icon: 'icon_01.svg', altText: '' },
+                    { id: '6', header: '550+', headerHeadingLevel: 'h2', subHeader: 'Beds', subHeaderHeadingLevel: 'h3', icon: 'icon_01.svg', altText: '' },
+                    { id: '7', header: '550+', headerHeadingLevel: 'h2', subHeader: 'Beds', subHeaderHeadingLevel: 'h3', icon: 'icon_01.svg', altText: '' }
                 ]
             }
         }
@@ -120,15 +121,20 @@ const OurStorySection = () => {
         
         // Get story boxes from statistic block type
         const statisticBlocks = storyBlocks.filter((block: ContentBlock) => block.block_type === 'statistic')
-        const storyBoxes: StoryBox[] = statisticBlocks.map((block, index) => ({
-            id: (index + 1).toString(),
-            header: block.statistics?.[0]?.number || block.content || '550+',
-            headerHeadingLevel: getHeaderHeadingLevel(block, 'h2'),
-            subHeader: block.statistics?.[0]?.statistic_text || 'Beds',
-            subHeaderHeadingLevel: getSubHeaderHeadingLevel(block, 'h3'),
-            icon: block.media_files?.[0]?.media_file?.original_filename || 'icon_01.svg',
-            mediaFileId: block.media_files?.[0]?.media_file?.id
-        }))
+        const storyBoxes: StoryBox[] = statisticBlocks.map((block, index) => {
+            const altText = block?.media_files?.[0]?.media_file?.alt_text || ''
+            const mediaFileId = block?.media_files?.[0]?.media_file?.id
+            return {
+                id: (index + 1).toString(),
+                header: block.statistics?.[0]?.number || block.content || '550+',
+                headerHeadingLevel: getHeaderHeadingLevel(block, 'h2'),
+                subHeader: block.statistics?.[0]?.statistic_text || 'Beds',
+                subHeaderHeadingLevel: getSubHeaderHeadingLevel(block, 'h3'),
+                icon: block.media_files?.[0]?.media_file?.original_filename || 'icon_01.svg',
+                mediaFileId: mediaFileId,
+                altText: altText
+            }
+        })
         
         // Ensure we have 7 boxes
         while (storyBoxes.length < 7) {
@@ -138,7 +144,8 @@ const OurStorySection = () => {
                 headerHeadingLevel: 'h2',
                 subHeader: 'Beds',
                 subHeaderHeadingLevel: 'h3',
-                icon: 'icon_01.svg'
+                icon: 'icon_01.svg',
+                altText: ''
             } as StoryBox)
         }
         
@@ -150,7 +157,7 @@ const OurStorySection = () => {
         }
     }
 
-    const handleStoryBoxChange = (setFieldValue: any, storyBoxes: StoryBox[], id: string, field: 'header' | 'subHeader' | 'icon' | 'headerHeadingLevel' | 'subHeaderHeadingLevel', value: string) => {
+    const handleStoryBoxChange = (setFieldValue: any, storyBoxes: StoryBox[], id: string, field: 'header' | 'subHeader' | 'icon' | 'headerHeadingLevel' | 'subHeaderHeadingLevel' | 'altText', value: string) => {
         const updatedBoxes = storyBoxes.map(box => 
             box.id === id ? { ...box, [field]: value } : box
         )
@@ -191,12 +198,13 @@ const OurStorySection = () => {
                     finalIconName = responseData.filePath
                 }
                 
-                // Update the icon name and media file ID in one operation
+                // Update the icon name, media file ID, and preserve alt text in one operation
                 const finalUpdatedBoxes = storyBoxes.map(box => 
                     box.id === id ? { 
                         ...box, 
                         icon: finalIconName,
-                        mediaFileId: responseData?.savedMedia?.id 
+                        mediaFileId: responseData?.savedMedia?.id,
+                        altText: responseData?.savedMedia?.alt_text || box.altText || ''
                     } : box
                 )
                 setFieldValue('storyBoxes', finalUpdatedBoxes)
@@ -300,14 +308,16 @@ const OurStorySection = () => {
                 const subHeaderChanged = box.subHeader !== initialBox.subHeader
                 const subHeaderHeadingLevelChanged = box.subHeaderHeadingLevel !== initialBox.subHeaderHeadingLevel
                 const iconChanged = box.mediaFileId !== initialBox.mediaFileId
+                const altTextChanged = box.altText !== initialBox?.altText
                 
-                if (headerChanged || headerHeadingLevelChanged || subHeaderChanged || subHeaderHeadingLevelChanged || iconChanged) {
+                if (headerChanged || headerHeadingLevelChanged || subHeaderChanged || subHeaderHeadingLevelChanged || iconChanged || altTextChanged) {
                     console.log(`Story Box ${index + 1} changed:`, {
                         header: { current: box.header, initial: initialBox.header, changed: headerChanged },
                         headerHeadingLevel: { current: box.headerHeadingLevel, initial: initialBox.headerHeadingLevel, changed: headerHeadingLevelChanged },
                         subHeader: { current: box.subHeader, initial: initialBox.subHeader, changed: subHeaderChanged },
                         subHeaderHeadingLevel: { current: box.subHeaderHeadingLevel, initial: initialBox.subHeaderHeadingLevel, changed: subHeaderHeadingLevelChanged },
-                        icon: { current: box.mediaFileId, initial: initialBox.mediaFileId, changed: iconChanged }
+                        icon: { current: box.mediaFileId, initial: initialBox.mediaFileId, changed: iconChanged },
+                        altText: { current: box.altText, initial: initialBox?.altText, changed: altTextChanged }
                     })
                     
                     // Build custom_css with heading levels, preserving existing custom_css if any
@@ -352,8 +362,8 @@ const OurStorySection = () => {
                         }]
                     }
                     
-                    // Add media files if icon changed
-                    if (iconChanged && box.mediaFileId) {
+                    // Add media files if icon changed or alt text changed
+                    if ((iconChanged || altTextChanged) && box.mediaFileId) {
                         // Find the existing media file to get its ID for update
                         const existingMediaFile: any = correspondingBlock.media_files?.[0] // Story boxes typically have one media file
                         
@@ -362,7 +372,8 @@ const OurStorySection = () => {
                             content_block_id: correspondingBlock.id,
                             media_file_id: box.mediaFileId,
                             media_type: "icon", // Story box icons are used as icons
-                            display_order: 1
+                            display_order: 1,
+                            alt_text: box.altText || '' // Include alt text in the update
                         }]
                     }
                     
@@ -572,6 +583,18 @@ const OurStorySection = () => {
                                                         </div>
                                                     </div>
                                                 </div>
+                                                {/* Alt Text Input */}
+                                                <FormItem
+                                                    label="Alt Text"
+                                                    labelClass="text-[#495057] font-inter text-[14px] font-medium leading-normal mt-3"
+                                                >
+                                                    <Input
+                                                        value={box.altText || ''}
+                                                        onChange={(e) => handleStoryBoxChange(setFieldValue, values.storyBoxes, box.id, 'altText', e.target.value)}
+                                                        className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                                        placeholder="Enter image alt text"
+                                                    />
+                                                </FormItem>
                                             </div>
                                         </div>
                                     ))}

@@ -29,7 +29,7 @@ export const homeApiSlice = RtkQueryService.injectEndpoints({
         }),
         updateHomeData: builder.mutation<UpdateHomeResponse, UpdateHomeRequest>({
             query: (data) => ({
-                url: '/admin/home',
+                url: '/home',
                 method: 'PUT',
                 data: data,
             }),

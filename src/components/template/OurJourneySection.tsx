@@ -15,6 +15,7 @@ type OurJourneyFormSchema = {
     content: string
     uploadFile: string
     uploadFileMediaId?: number
+    altText?: string
 }
 
 const headingLevelOptions = [
@@ -70,7 +71,8 @@ const OurJourneySection = () => {
                 headerTextHeadingLevel: 'h1',
                 content: "",
                 uploadFile: "",
-                uploadFileMediaId: undefined
+                uploadFileMediaId: undefined,
+                altText: ''
             }
         }
         
@@ -78,6 +80,10 @@ const OurJourneySection = () => {
         const journeyContentBlocks = contentBlocks.filter((block: ContentBlock) => block.section_id === 7)
         const sortedBlocks = journeyContentBlocks.sort((a, b) => a.display_order - b.display_order)
         const titleBlock = sortedBlocks.find((block: ContentBlock) => block.display_order === 1 && block.block_type === 'text')
+        const imageBlock = sortedBlocks.find((block: ContentBlock) => block.display_order === 3 && block.block_type === 'image')
+        
+        // Extract alt text from image block
+        const altText = imageBlock?.media_files?.[0]?.media_file?.alt_text || ''
         
         // console.log('Raw home data for Our Journey:', contentBlocks)
         const journeyData = parseOurJourneySection(contentBlocks)
@@ -88,14 +94,15 @@ const OurJourneySection = () => {
             headerTextHeadingLevel: getHeadingLevel(titleBlock, 'h1'),
             content: journeyData.content || "",
             uploadFile: journeyData.uploadFile || "",
-            uploadFileMediaId: (journeyData as any).uploadFileMediaId
+            uploadFileMediaId: (journeyData as any).uploadFileMediaId,
+            altText: altText
         }
         
         // console.log('Final initial values:', initialValues)
         return initialValues
     }
 
-    const handleFileUpload = async (setFieldValue: any, event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = async (setFieldValue: any, currentAltText: string, event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0]
         if (!file) return
 
@@ -128,6 +135,9 @@ const OurJourneySection = () => {
                     console.log('Our Journey file upload - savedMedia.id:', responseData.savedMedia.id)
                 }
                 
+                // Update alt text from response or preserve existing
+                setFieldValue('altText', responseData?.savedMedia?.alt_text || currentAltText || '')
+                
                 // Reset the file input to allow re-uploading the same file if needed
                 if (uploadFileRef.current) {
                     uploadFileRef.current.value = ''
@@ -147,6 +157,7 @@ const OurJourneySection = () => {
             // Reset the field values on error
             setFieldValue('uploadFile', '')
             setFieldValue('uploadFileMediaId', undefined)
+            // Keep alt text on error (don't reset it)
         } finally {
             setIsFileUploading(false)
         }
@@ -257,18 +268,23 @@ const OurJourneySection = () => {
                 changedObjects.push('Content')
             }
             
-            // 3. Check if Upload File changed
+            // 3. Check if Upload File or Alt Text changed
             const uploadFileChanged = values.uploadFile !== initialValues.uploadFile
             const uploadFileMediaIdChanged = values.uploadFileMediaId !== initialValues.uploadFileMediaId
-            const uploadFileOverallChanged = imageBlock && (uploadFileChanged || uploadFileMediaIdChanged)
+            const altTextChanged = (values.altText || '') !== (initialValues.altText || '')
+            const uploadFileOverallChanged = imageBlock && (uploadFileChanged || uploadFileMediaIdChanged || altTextChanged)
             
             console.log('Upload File comparison:', {
                 file: { current: values.uploadFile, initial: initialValues.uploadFile, changed: uploadFileChanged },
                 mediaFileId: { current: values.uploadFileMediaId, initial: initialValues.uploadFileMediaId, changed: uploadFileMediaIdChanged },
+                altText: { current: values.altText, initial: initialValues.altText, changed: altTextChanged },
                 overallChanged: uploadFileOverallChanged
             })
             
-            if (uploadFileOverallChanged && values.uploadFileMediaId) {
+            if (uploadFileOverallChanged && (values.uploadFileMediaId || altTextChanged)) {
+                // Use existing media_file_id if not changed, but alt text changed
+                const mediaFileIdToUse = values.uploadFileMediaId || imageBlock.media_files?.[0]?.media_file?.id
+                
                 updatedContentBlocks.push({
                     id: imageBlock.id,
                     block_type: imageBlock.block_type,
@@ -278,9 +294,10 @@ const OurJourneySection = () => {
                     media_files: [{
                         id: imageBlock.media_files[0]?.id || Date.now(),
                         content_block_id: imageBlock.id,
-                        media_file_id: values.uploadFileMediaId,
+                        media_file_id: mediaFileIdToUse,
                         media_type: "primary",
-                        display_order: 1
+                        display_order: 1,
+                        alt_text: values.altText || '' // Include alt text in the update
                     }]
                 })
                 changedObjects.push('Upload File')
@@ -458,7 +475,7 @@ const OurJourneySection = () => {
                                                             ref={uploadFileRef}
                                                             type="file"
                                                             accept="image/*"
-                                                            onChange={(e) => handleFileUpload(setFieldValue, e)}
+                                                            onChange={(e) => handleFileUpload(setFieldValue, values.altText || '', e)}
                                                             className="hidden"
                                                         />
                                                         <Button 
@@ -473,6 +490,18 @@ const OurJourneySection = () => {
                                                 </div>
                                             </div>
                                         </div>
+                                    </FormItem>
+                                    {/* Alt Text Input */}
+                                    <FormItem
+                                        label="Alt Text"
+                                        labelClass="text-[#495057] font-inter text-[14px] font-medium leading-normal mt-3"
+                                    >
+                                        <Field
+                                            name="altText"
+                                            component={Input}
+                                            className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                            placeholder="Enter image alt text"
+                                        />
                                     </FormItem>
                                 </div>
 
