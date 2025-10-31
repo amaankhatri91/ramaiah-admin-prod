@@ -27,7 +27,7 @@ const DoctorSpeakSection = () => {
     const getInitialValues = (): DoctorSpeakFormSchema => {
         if (!homeData?.data) {
             return {
-                doctorSpeakVideo: "in affiliation logos.mp4",
+                doctorSpeakVideo: "",
                 mediaFileId: undefined
             }
         }
@@ -35,7 +35,7 @@ const DoctorSpeakSection = () => {
         const doctorData = parseDoctorSpeakSection(homeData.data)
         const doctorBlock = homeData.data.find(block => block.section_id === 3 && block.title === 'Doctor Speak')
         return {
-            doctorSpeakVideo: doctorData.doctorSpeakVideo || "in affiliation logos.mp4",
+            doctorSpeakVideo: doctorData.doctorSpeakVideo || "",
             mediaFileId: doctorBlock?.media_files?.[0]?.media_file?.id
         }
     }
@@ -96,22 +96,35 @@ const DoctorSpeakSection = () => {
 
     const onSubmit = async (values: DoctorSpeakFormSchema) => {
         try {
+            // Check if media file ID is provided
+            if (!values.mediaFileId) {
+                toast.push(
+                    <Notification type="danger" duration={3000} title="Error">
+                        Please upload a video file before saving
+                    </Notification>,
+                    { placement: 'top-end' }
+                )
+                return
+            }
+
             // Find the doctor speak block from the home data
             const doctorBlock = homeData?.data?.find(block => block.section_id === 3 && block.title === 'Doctor Speak')
             
-            if (!doctorBlock) {
-                throw new Error('Doctor Speak block not found')
-            }
+            // Handle case where block doesn't exist - use default structure
+            const blockId = doctorBlock?.id || 0
+            const blockType = doctorBlock?.block_type || 'video'
+            const blockTitle = doctorBlock?.title || 'Doctor Speak'
+            const existingMediaFileId = doctorBlock?.media_files?.[0]?.id || 0
 
             // Build the content blocks structure similar to hero section
             const contentBlocks = [{
-                id: doctorBlock.id,
-                block_type: doctorBlock.block_type,
-                title: doctorBlock.title,
+                id: blockId,
+                block_type: blockType,
+                title: blockTitle,
                 media_files: [{
-                    id: doctorBlock.media_files[0]?.id || 0,
-                    content_block_id: doctorBlock.id,
-                    media_file_id: values.mediaFileId || 0,
+                    id: existingMediaFileId,
+                    content_block_id: blockId,
+                    media_file_id: values.mediaFileId,
                     media_type: "primary", // Video updates should be primary
                     display_order: 1
                 }]
