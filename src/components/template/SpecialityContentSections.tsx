@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useAppSelector, useAppDispatch } from '@/store'
 import { HiPlus, HiPencil, HiXMark } from 'react-icons/hi2'
 import FileUpload from '@/components/ui/FileUpload'
-import { Button, Card, Input } from '@/components/ui'
+import { Button, Card, Input, Select } from '@/components/ui'
 import { FormItem, FormContainer } from '@/components/ui/Form'
 import { Field, Form, Formik } from 'formik'
 import * as Yup from 'yup'
@@ -13,6 +13,7 @@ import toast from '@/components/ui/toast'
 import Notification from '@/components/ui/Notification'
 import { PageSectionsData, apiGetPageSections } from '@/services/HomeService'
 import { RichTextEditor } from '@/components/shared'
+import SpecialitySettingsSection from '@/components/template/SpecialitySettingsSection'
 
 interface SpecialityContentSectionsProps {
     activeTab: string
@@ -48,6 +49,24 @@ const SpecialityContentSections: React.FC<SpecialityContentSectionsProps> = ({
     const [isHeroImageUploading, setIsHeroImageUploading] = useState(false)
     const [isHeroBgImageUploading, setIsHeroBgImageUploading] = useState(false)
     const [isOverviewImageUploading, setIsOverviewImageUploading] = useState(false)
+    
+    // Heading level options
+    const headingLevelOptions = [
+        { value: 'h1', label: 'H1' },
+        { value: 'h2', label: 'H2' },
+        { value: 'h3', label: 'H3' },
+        { value: 'h4', label: 'H4' },
+        { value: 'h5', label: 'H5' },
+        { value: 'h6', label: 'H6' },
+    ]
+    
+    // Parse heading level from custom_css (e.g., "heading-level:h1") or default
+    const getHeadingLevel = (block: any | undefined, defaultValue: string): string => {
+        if (!block?.custom_css) return defaultValue
+        const match = block.custom_css.match(/heading-level:\s*(h[1-6])/i)
+        return match ? match[1].toLowerCase() : defaultValue
+    }
+    
     console.log("activeTab",pageId);
     // Get the current active tab's data
     const getCurrentTabData = () => {
@@ -146,6 +165,7 @@ console.log("pageDataaaaaaa",pageData);
                         setHeroSection(prev => ({
                             ...prev,
                             headerText: heroTextBlock.title,
+                            headerTextHeadingLevel: getHeadingLevel(heroTextBlock, 'h1'),
                             descriptionText: `Comprehensive healthcare services for ${activeTab}`,
                             buttonText: 'Book Appointment',
                             buttonLink: `https://www.ramaiah.com/${currentTabData?.url || 'appointment'}`,
@@ -173,6 +193,7 @@ console.log("pageDataaaaaaa",pageData);
                     if (overviewContentBlock || overviewContenttitle) {
                         const newOverviewSection: OverviewSectionState = {
                             headerText: overviewContenttitle?.title || '',
+                            headerTextHeadingLevel: getHeadingLevel(overviewContenttitle, 'h1'),
                             overview: overviewContentBlock?.content || '',
                             image: null,
                             imageFileName: overviewImageBlock?.media_files?.[0]?.media_file?.original_filename || '',
@@ -187,6 +208,11 @@ console.log("pageDataaaaaaa",pageData);
             if (pageId && pageData[pageId]?.data && Array.isArray(pageData[pageId]?.data)) {
                 const specialitiesSection = pageData[pageId]?.data.find((section: any) => section.name === 'our specialities')
                 if (specialitiesSection && specialitiesSection.content_blocks) {
+                    // Find the title block for header text heading level
+                    const specialitiesTitleBlock = specialitiesSection.content_blocks.find((block: any) => 
+                        block.block_type === 'text' && block.title
+                    )
+                    
                     // Find the content block with specialties
                     const specialitiesDataBlock = specialitiesSection.content_blocks.find((block: any) => 
                         block.specialties && block.specialties.length > 0
@@ -196,12 +222,14 @@ console.log("pageDataaaaaaa",pageData);
                         const courses = specialitiesDataBlock.specialties.map((specialty: any, index: number) => ({
                             id: specialty.id || index + 1,
                             text: specialty.name || '',
-                            link: ''
+                            link: specialty.link || '',
+                            headingLevel: getHeadingLevel(specialty, 'h1') // Parse heading level from specialty's custom_css
                         }))
                         
                         setCoursesSection(prev => ({
                             ...prev,
-                            headerText: 'Our Specialities',
+                            headerText: specialitiesTitleBlock?.title || 'Our Specialities',
+                            headerTextHeadingLevel: getHeadingLevel(specialitiesTitleBlock, 'h1'),
                             courses: courses
                         }))
                     }
@@ -212,6 +240,11 @@ console.log("pageDataaaaaaa",pageData);
             if (pageId && pageData[pageId]?.data && Array.isArray(pageData[pageId]?.data)) {
                 const servicesSection = pageData[pageId]?.data.find((section: any) => section.name === 'service & facilities')
                 if (servicesSection && servicesSection.content_blocks) {
+                    // Find the title block for header text heading level
+                    const servicesTitleBlock = servicesSection.content_blocks.find((block: any) => 
+                        block.block_type === 'text' && block.title
+                    )
+                    
                     // Find the content block with facility specialties
                     const servicesDataBlock = servicesSection.content_blocks.find((block: any) => 
                         block.facilitySpecialties && block.facilitySpecialties.length > 0
@@ -220,12 +253,14 @@ console.log("pageDataaaaaaa",pageData);
                     if (servicesDataBlock?.facilitySpecialties) {
                         const services = servicesDataBlock.facilitySpecialties.map((facilitySpecialty: any, index: number) => ({
                             id: facilitySpecialty.id || index + 1,
-                            text: facilitySpecialty.facility?.name || ''
+                            text: facilitySpecialty.facility?.name || '',
+                            headingLevel: getHeadingLevel(facilitySpecialty.facility, 'h1') // Parse heading level from facility's custom_css
                         }))
                         
                         setServicesFacilitiesSection(prev => ({
                             ...prev,
-                            headerText: 'Services & Facilities',
+                            headerText: servicesTitleBlock?.title || 'Services & Facilities',
+                            headerTextHeadingLevel: getHeadingLevel(servicesTitleBlock, 'h1'),
                             services: services
                         }))
                     }
@@ -240,6 +275,7 @@ console.log("pageDataaaaaaa",pageData);
     // Form states for different sections - now dynamic based on active tab
     const [heroSection, setHeroSection] = useState({
         headerText: '',
+        headerTextHeadingLevel: 'h1',
         descriptionText: '',
         buttonText: 'Book Appointment',
         buttonLink: 'https://www.somepagelink.com',
@@ -261,7 +297,8 @@ console.log("heroSectionddd",heroSection);
 
     const [coursesSection, setCoursesSection] = useState({
         headerText: 'Our Specialities',
-        courses: [] as Array<{ id: number, text: string, link: string }>
+        headerTextHeadingLevel: 'h1',
+        courses: [] as Array<{ id: number, text: string, link: string, headingLevel: string }>
     })
 
     const [expertsSection, setExpertsSection] = useState({
@@ -271,7 +308,8 @@ console.log("heroSectionddd",heroSection);
 
     const [servicesFacilitiesSection, setServicesFacilitiesSection] = useState({
         headerText: 'Services & Facilities',
-        services: [] as Array<{ id: number, text: string }>
+        headerTextHeadingLevel: 'h1',
+        services: [] as Array<{ id: number, text: string, headingLevel: string }>
     })
 
     const [enquiryFormSection, setEnquiryFormSection] = useState({
@@ -508,15 +546,25 @@ console.log("heroSectionddd",heroSection);
             const contentBlocks: any[] = []
             const changedObjects: string[] = []
 
-            // Update text block with header text (always update)
+            // Update text block with header text and heading level
             const heroTextBlock = heroSectionData.content_blocks?.find((block: any) => 
                 block.block_type === 'text' && block.title
             )
             if (heroTextBlock) {
+                // Build custom_css with heading level, preserving existing custom_css if any
+                let customCss = heroTextBlock.custom_css || ''
+                // Replace existing heading-level or add new one
+                if (customCss.match(/heading-level:\s*h[1-6]/i)) {
+                    customCss = customCss.replace(/heading-level:\s*h[1-6]/i, `heading-level:${heroSection.headerTextHeadingLevel}`)
+                } else {
+                    customCss = customCss ? `${customCss}; heading-level:${heroSection.headerTextHeadingLevel}` : `heading-level:${heroSection.headerTextHeadingLevel}`
+                }
+                
                 contentBlocks.push({
                     id: heroTextBlock.id,
                     block_type: heroTextBlock.block_type,
-                    title: heroSection.headerText
+                    title: heroSection.headerText,
+                    custom_css: customCss
                 })
                 changedObjects.push('Hero Header Text')
             }
@@ -788,15 +836,25 @@ console.log("heroSectionddd",heroSection);
             const contentBlocks: any[] = []
             const changedObjects: string[] = []
 
-            // Update title block with header text (always update)
+            // Update title block with header text and heading level
             const overviewTitleBlock = overviewSectionData.content_blocks?.find((block: any) => 
                 block.block_type === 'text' && block.title
             )
             if (overviewTitleBlock) {
+                // Build custom_css with heading level, preserving existing custom_css if any
+                let customCss = overviewTitleBlock.custom_css || ''
+                // Replace existing heading-level or add new one
+                if (customCss.match(/heading-level:\s*h[1-6]/i)) {
+                    customCss = customCss.replace(/heading-level:\s*h[1-6]/i, `heading-level:${overviewSection.headerTextHeadingLevel}`)
+                } else {
+                    customCss = customCss ? `${customCss}; heading-level:${overviewSection.headerTextHeadingLevel}` : `heading-level:${overviewSection.headerTextHeadingLevel}`
+                }
+                
                 contentBlocks.push({
                     id: overviewTitleBlock.id,
                     block_type: overviewTitleBlock.block_type,
-                    title: overviewSection.headerText
+                    title: overviewSection.headerText,
+                    custom_css: customCss
                 })
                 changedObjects.push('Overview Header Text')
             }
@@ -892,6 +950,15 @@ console.log("heroSectionddd",heroSection);
         })
     }
 
+    const handleCourseHeadingLevelChange = (courseId: number, newHeadingLevel: string) => {
+        setCoursesSection({
+            ...coursesSection,
+            courses: coursesSection.courses.map(course =>
+                course.id === courseId ? { ...course, headingLevel: newHeadingLevel } : course
+            )
+        })
+    }
+
     const handleCourseLinkChange = (courseId: number, newLink: string) => {
         setCoursesSection({
             ...coursesSection,
@@ -906,7 +973,8 @@ console.log("heroSectionddd",heroSection);
         const newCourse = {
             id: newCourseId,
             text: `New Course ${newCourseId}`,
-            link: ''
+            link: '',
+            headingLevel: 'h1'
         }
         setCoursesSection({
             ...coursesSection,
@@ -940,15 +1008,25 @@ console.log("heroSectionddd",heroSection);
             const contentBlocks: any[] = []
             const changedObjects: string[] = []
 
-            // Update title block with header text (always update)
+            // Update title block with header text and heading level
             const specialitiesTitleBlock = specialitiesSectionData.content_blocks?.find((block: any) => 
                 block.block_type === 'text' && block.title
             )
             if (specialitiesTitleBlock) {
+                // Build custom_css with heading level, preserving existing custom_css if any
+                let customCss = specialitiesTitleBlock.custom_css || ''
+                // Replace existing heading-level or add new one
+                if (customCss.match(/heading-level:\s*h[1-6]/i)) {
+                    customCss = customCss.replace(/heading-level:\s*h[1-6]/i, `heading-level:${coursesSection.headerTextHeadingLevel}`)
+                } else {
+                    customCss = customCss ? `${customCss}; heading-level:${coursesSection.headerTextHeadingLevel}` : `heading-level:${coursesSection.headerTextHeadingLevel}`
+                }
+                
                 contentBlocks.push({
                     id: specialitiesTitleBlock.id,
                     block_type: specialitiesTitleBlock.block_type,
-                    title: coursesSection.headerText
+                    title: coursesSection.headerText,
+                    custom_css: customCss
                 })
                 changedObjects.push('Our Specialities Header Text')
             }
@@ -959,11 +1037,12 @@ console.log("heroSectionddd",heroSection);
             )
             
             if (specialitiesDataBlock) {
-                // Convert courses to specialties format
+                // Convert courses to specialties format with heading levels in custom_css
                 const specialties = coursesSection.courses.map(course => ({
                     id: course.id,
                     name: course.text,
-                    link: course.link
+                    link: course.link,
+                    custom_css: `heading-level:${course.headingLevel || 'h1'}`
                 }))
 
                 contentBlocks.push({
@@ -1038,11 +1117,21 @@ console.log("heroSectionddd",heroSection);
         })
     }
 
+    const handleServiceHeadingLevelChange = (serviceId: number, newHeadingLevel: string) => {
+        setServicesFacilitiesSection({
+            ...servicesFacilitiesSection,
+            services: servicesFacilitiesSection.services.map(service =>
+                service.id === serviceId ? { ...service, headingLevel: newHeadingLevel } : service
+            )
+        })
+    }
+
     const addNewService = () => {
         const newServiceId = Math.max(...servicesFacilitiesSection.services.map(service => service.id), 0) + 1
         const newService = {
             id: newServiceId,
-            text: `New Service ${newServiceId}`
+            text: `New Service ${newServiceId}`,
+            headingLevel: 'h1'
         }
         setServicesFacilitiesSection({
             ...servicesFacilitiesSection,
@@ -1083,15 +1172,25 @@ console.log("heroSectionddd",heroSection);
             const contentBlocks: any[] = []
             const changedObjects: string[] = []
 
-            // Update title block with header text (always update)
+            // Update title block with header text and heading level
             const servicesTitleBlock = servicesSectionData.content_blocks?.find((block: any) => 
                 block.block_type === 'text' && block.title
             )
             if (servicesTitleBlock) {
+                // Build custom_css with heading level, preserving existing custom_css if any
+                let customCss = servicesTitleBlock.custom_css || ''
+                // Replace existing heading-level or add new one
+                if (customCss.match(/heading-level:\s*h[1-6]/i)) {
+                    customCss = customCss.replace(/heading-level:\s*h[1-6]/i, `heading-level:${servicesFacilitiesSection.headerTextHeadingLevel}`)
+                } else {
+                    customCss = customCss ? `${customCss}; heading-level:${servicesFacilitiesSection.headerTextHeadingLevel}` : `heading-level:${servicesFacilitiesSection.headerTextHeadingLevel}`
+                }
+                
                 contentBlocks.push({
                     id: servicesTitleBlock.id,
                     block_type: servicesTitleBlock.block_type,
-                    title: servicesFacilitiesSection.headerText
+                    title: servicesFacilitiesSection.headerText,
+                    custom_css: customCss
                 })
                 changedObjects.push('Services & Facilities Header Text')
             }
@@ -1102,11 +1201,12 @@ console.log("heroSectionddd",heroSection);
             )
             
             if (servicesDataBlock) {
-                // Convert services to facility specialties format
+                // Convert services to facility specialties format with heading levels in custom_css
                 const facilitySpecialties = servicesFacilitiesSection.services.map(service => ({
                     id: service.id,
                     facility: {
-                        name: service.text
+                        name: service.text,
+                        custom_css: `heading-level:${service.headingLevel || 'h1'}`
                     }
                 }))
 
@@ -1373,6 +1473,11 @@ console.log("heroSectionddd",heroSection);
                 </div>
             )}
 
+            {/* Page Settings Section */}
+            <div className="mb-6">
+                <SpecialitySettingsSection />
+            </div>
+
             {/* Hero Section */}
             <div className="bg-white rounded-[20px] shadow-sm border border-gray-200 p-6 mb-6">
                 <h2 className="text-[#495057] font-inter text-[16px] font-semibold leading-normal mb-6">Hero Section</h2>
@@ -1380,12 +1485,22 @@ console.log("heroSectionddd",heroSection);
 
                 <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Header Text</label>
-                    <input
-                        type="text"
-                        value={heroSection.headerText}
-                        onChange={(e) => setHeroSection({ ...heroSection, headerText: e.target.value })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-[24px]  "
-                    />
+                    <div className="flex gap-3">
+                        <Select
+                            options={headingLevelOptions}
+                            className="!w-[100px] !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                            onChange={(option: any) => {
+                                setHeroSection({ ...heroSection, headerTextHeadingLevel: option?.value || 'h1' })
+                            }}
+                            value={headingLevelOptions.find(option => option.value === heroSection.headerTextHeadingLevel)}
+                        />
+                        <input
+                            type="text"
+                            value={heroSection.headerText}
+                            onChange={(e) => setHeroSection({ ...heroSection, headerText: e.target.value })}
+                            className="flex-1 px-4 py-3 border border-gray-300 rounded-[24px]"
+                        />
+                    </div>
                 </div>
                 <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Upload image</label>
@@ -1456,13 +1571,23 @@ console.log("heroSectionddd",heroSection);
                 {/* Header Text */}
                 <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Header Text</label>
-                    <input
-                        type="text"
-                        value={overviewSection.headerText}
-                        onChange={(e) => dispatch(updateOverviewSection({ headerText: e.target.value }))}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-[24px]   bg-white"
-                        placeholder="Enter header text..."
-                    />
+                    <div className="flex gap-3">
+                        <Select
+                            options={headingLevelOptions}
+                            className="!w-[100px] !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                            onChange={(option: any) => {
+                                dispatch(updateOverviewSection({ headerTextHeadingLevel: option?.value || 'h1' }))
+                            }}
+                            value={headingLevelOptions.find(option => option.value === overviewSection.headerTextHeadingLevel)}
+                        />
+                        <input
+                            type="text"
+                            value={overviewSection.headerText}
+                            onChange={(e) => dispatch(updateOverviewSection({ headerText: e.target.value }))}
+                            className="flex-1 px-4 py-3 border border-gray-300 rounded-[24px] bg-white"
+                            placeholder="Enter header text..."
+                        />
+                    </div>
                 </div>
 
                 {/* Content */}
@@ -1543,13 +1668,23 @@ console.log("heroSectionddd",heroSection);
                 {/* Header Text */}
                 <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Header Text</label>
-                    <input
-                        type="text"
-                        value={coursesSection.headerText}
-                        onChange={(e) => setCoursesSection({ ...coursesSection, headerText: e.target.value })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-[24px]   bg-white"
-                        placeholder="Enter header text..."
-                    />
+                    <div className="flex gap-3">
+                        <Select
+                            options={headingLevelOptions}
+                            className="!w-[100px] !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                            onChange={(option: any) => {
+                                setCoursesSection({ ...coursesSection, headerTextHeadingLevel: option?.value || 'h1' })
+                            }}
+                            value={headingLevelOptions.find(option => option.value === coursesSection.headerTextHeadingLevel)}
+                        />
+                        <input
+                            type="text"
+                            value={coursesSection.headerText}
+                            onChange={(e) => setCoursesSection({ ...coursesSection, headerText: e.target.value })}
+                            className="flex-1 px-4 py-3 border border-gray-300 rounded-[24px] bg-white"
+                            placeholder="Enter header text..."
+                        />
+                    </div>
                 </div>
 
                 {/* Course Management */}
@@ -1568,13 +1703,23 @@ console.log("heroSectionddd",heroSection);
                             <div key={course.id} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4  rounded-lg">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-600 mb-2">Button Text</label>
-                                    <input
-                                        type="text"
-                                        value={course.text}
-                                        onChange={(e) => handleCourseTextChange(course.id, e.target.value)}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-[24px]   bg-white"
-                                        placeholder="Enter button text..."
-                                    />
+                                    <div className="flex gap-3">
+                                        <Select
+                                            options={headingLevelOptions}
+                                            className="!w-[100px] !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                            onChange={(option: any) => {
+                                                handleCourseHeadingLevelChange(course.id, option?.value || 'h1')
+                                            }}
+                                            value={headingLevelOptions.find(option => option.value === (course.headingLevel || 'h1'))}
+                                        />
+                                        <input
+                                            type="text"
+                                            value={course.text}
+                                            onChange={(e) => handleCourseTextChange(course.id, e.target.value)}
+                                            className="flex-1 px-4 py-3 border border-gray-300 rounded-[24px] bg-white"
+                                            placeholder="Enter button text..."
+                                        />
+                                    </div>
                                 </div>
                                 {/* <div>
                                     <label className="block text-sm font-medium text-gray-600 mb-2">Button Link</label>
@@ -1609,13 +1754,23 @@ console.log("heroSectionddd",heroSection);
                 {/* Header Text */}
                 <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Header Text</label>
-                    <input
-                        type="text"
-                        value={servicesFacilitiesSection.headerText}
-                        onChange={(e) => setServicesFacilitiesSection({ ...servicesFacilitiesSection, headerText: e.target.value })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-[24px] bg-white"
-                        placeholder="Enter header text..."
-                    />
+                    <div className="flex gap-3">
+                        <Select
+                            options={headingLevelOptions}
+                            className="!w-[100px] !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                            onChange={(option: any) => {
+                                setServicesFacilitiesSection({ ...servicesFacilitiesSection, headerTextHeadingLevel: option?.value || 'h1' })
+                            }}
+                            value={headingLevelOptions.find(option => option.value === servicesFacilitiesSection.headerTextHeadingLevel)}
+                        />
+                        <input
+                            type="text"
+                            value={servicesFacilitiesSection.headerText}
+                            onChange={(e) => setServicesFacilitiesSection({ ...servicesFacilitiesSection, headerText: e.target.value })}
+                            className="flex-1 px-4 py-3 border border-gray-300 rounded-[24px] bg-white"
+                            placeholder="Enter header text..."
+                        />
+                    </div>
                 </div>
 
                 {/* Services Management */}
@@ -1643,13 +1798,23 @@ console.log("heroSectionddd",heroSection);
                                         <img src="/img/images/deatetable.svg" alt="delete" className="w-5 h-5" />
                                     </button>
                                 </div>
-                                <input
-                                    type="text"
-                                    value={service.text}
-                                    onChange={(e) => handleServiceTextChange(service.id, e.target.value)}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-[24px] bg-white"
-                                    placeholder="Enter service name..."
-                                />
+                                <div className="flex gap-3">
+                                    <Select
+                                        options={headingLevelOptions}
+                                        className="!w-[100px] !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                        onChange={(option: any) => {
+                                            handleServiceHeadingLevelChange(service.id, option?.value || 'h1')
+                                        }}
+                                        value={headingLevelOptions.find(option => option.value === (service.headingLevel || 'h1'))}
+                                    />
+                                    <input
+                                        type="text"
+                                        value={service.text}
+                                        onChange={(e) => handleServiceTextChange(service.id, e.target.value)}
+                                        className="flex-1 px-4 py-3 border border-gray-300 rounded-[24px] bg-white"
+                                        placeholder="Enter service name..."
+                                    />
+                                </div>
                             </div>
                         ))}
                     </div>

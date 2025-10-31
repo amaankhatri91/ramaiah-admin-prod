@@ -49,6 +49,7 @@ export interface MenuPathItem {
 
 export interface OverviewSectionState {
     headerText: string
+    headerTextHeadingLevel: string
     overview: string
     image: File | null
     imageFileName: string
@@ -74,6 +75,7 @@ export const initialState: CommonState = {
     activeSpeciality: null,
     overviewSection: {
         headerText: '',
+        headerTextHeadingLevel: 'h1',
         overview: '',
         image: null,
         imageFileName: '',
@@ -144,6 +146,7 @@ export const commonSlice = createSlice({
         clearOverviewSection: (state) => {
             state.overviewSection = {
                 headerText: '',
+                headerTextHeadingLevel: 'h1',
                 overview: '',
                 image: null,
                 imageFileName: '',
