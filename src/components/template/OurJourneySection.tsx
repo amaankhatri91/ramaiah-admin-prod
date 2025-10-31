@@ -1,23 +1,34 @@
-import { Card, Input, Button } from '@/components/ui'
+import { Card, Input, Button, Select } from '@/components/ui'
 import { FormItem, FormContainer } from '@/components/ui/Form'
 import { Field, Form, Formik } from 'formik'
 import * as Yup from 'yup'
 import { useState, useRef, useEffect } from 'react'
 import { useGetHomeDataQuery, useUpdateHomeSectionMutation } from '@/store/slices/home'
 import { useUploadFileMutation } from '@/store/slices/fileUpload/fileUploadApiSlice'
-import { parseOurJourneySection } from '@/services/HomeService'
+import { parseOurJourneySection, ContentBlock } from '@/services/HomeService'
 import { toast, Notification } from '@/components/ui'
 import { RichTextEditor } from '@/components/shared'
 
 type OurJourneyFormSchema = {
     headerText: string
+    headerTextHeadingLevel: string
     content: string
     uploadFile: string
     uploadFileMediaId?: number
 }
 
+const headingLevelOptions = [
+    { value: 'h1', label: 'H1' },
+    { value: 'h2', label: 'H2' },
+    { value: 'h3', label: 'H3' },
+    { value: 'h4', label: 'H4' },
+    { value: 'h5', label: 'H5' },
+    { value: 'h6', label: 'H6' },
+]
+
 const validationSchema = Yup.object().shape({
     headerText: Yup.string().required('Header text is required'),
+    headerTextHeadingLevel: Yup.string().required('Header text heading level is required'),
     content: Yup.string().required('Content is required'),
     uploadFile: Yup.string().required('Upload file is required'),
 })
@@ -39,16 +50,29 @@ const OurJourneySection = () => {
         }
     }, [homeData])
 
+    // Parse heading level from custom_css (e.g., "heading-level:h1") or default
+    const getHeadingLevel = (block: ContentBlock | undefined, defaultValue: string): string => {
+        if (!block?.custom_css) return defaultValue
+        const match = block.custom_css.match(/heading-level:\s*(h[1-6])/i)
+        return match ? match[1].toLowerCase() : defaultValue
+    }
+
     const getInitialValues = (): OurJourneyFormSchema => {
         if (!homeData?.data) {
             console.log('No home data available for initial values')
             return {
                 headerText: "",
+                headerTextHeadingLevel: 'h1',
                 content: "",
                 uploadFile: "",
                 uploadFileMediaId: undefined
             }
         }
+        
+        // Get journey blocks and find the title block
+        const journeyContentBlocks = homeData.data.filter(block => block.section_id === 7)
+        const sortedBlocks = journeyContentBlocks.sort((a, b) => a.display_order - b.display_order)
+        const titleBlock = sortedBlocks.find(block => block.display_order === 1 && block.block_type === 'text')
         
         // console.log('Raw home data for Our Journey:', homeData.data)
         const journeyData = parseOurJourneySection(homeData.data)
@@ -56,6 +80,7 @@ const OurJourneySection = () => {
         
         const initialValues = {
             headerText: journeyData.headerText || "",
+            headerTextHeadingLevel: getHeadingLevel(titleBlock, 'h1'),
             content: journeyData.content || "",
             uploadFile: journeyData.uploadFile || "",
             uploadFileMediaId: (journeyData as any).uploadFileMediaId
@@ -163,22 +188,44 @@ const OurJourneySection = () => {
             const contentBlocks = []
             const changedObjects = []
             
-            // 1. Check if Header Text (title) changed
-            const headerTextChanged = titleBlock && values.headerText
+            // 1. Check if Header Text (title) or Heading Level changed
+            const headerTextChanged = titleBlock && values.headerText !== initialValues.headerText
+            const headerTextHeadingLevelChanged = titleBlock && values.headerTextHeadingLevel !== initialValues.headerTextHeadingLevel
+            
             console.log('Header Text comparison:', {
                 current: values.headerText,
                 initial: initialValues.headerText,
                 changed: headerTextChanged,
                 titleBlock: titleBlock
             })
+            console.log('Header Heading Level comparison:', {
+                current: values.headerTextHeadingLevel,
+                initial: initialValues.headerTextHeadingLevel,
+                changed: headerTextHeadingLevelChanged
+            })
             
-            if (headerTextChanged) {
+            if ((headerTextChanged || headerTextHeadingLevelChanged) && titleBlock) {
+                // Build custom_css with heading level, preserving existing custom_css if any
+                let customCss = titleBlock.custom_css || ''
+                if (headerTextHeadingLevelChanged) {
+                    // Replace existing heading-level or add new one
+                    if (customCss.match(/heading-level:\s*h[1-6]/i)) {
+                        customCss = customCss.replace(/heading-level:\s*h[1-6]/i, `heading-level:${values.headerTextHeadingLevel}`)
+                    } else {
+                        customCss = customCss ? `${customCss}; heading-level:${values.headerTextHeadingLevel}` : `heading-level:${values.headerTextHeadingLevel}`
+                    }
+                } else if (!customCss.match(/heading-level:/i)) {
+                    // Add default if not present
+                    customCss = customCss ? `${customCss}; heading-level:${values.headerTextHeadingLevel}` : `heading-level:${values.headerTextHeadingLevel}`
+                }
+                
                 contentBlocks.push({
                     id: titleBlock.id,
                     block_type: titleBlock.block_type,
                     title: values.headerText, // Update the title field
                     content: titleBlock.content,
-                    display_order: titleBlock.display_order
+                    display_order: titleBlock.display_order,
+                    custom_css: customCss
                 })
                 changedObjects.push('Header Text')
             }
@@ -314,12 +361,27 @@ const OurJourneySection = () => {
                                         invalid={(errors.headerText && touched.headerText) as boolean}
                                         errorMessage={errors.headerText}
                                     >
-                                        <Field
-                                            name="headerText"
-                                            component={Input}
-                                            className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                                            placeholder="Enter header text"
-                                        />
+                                        <div className="flex gap-3">
+                                            <Field name="headerTextHeadingLevel">
+                                                {({ field, form }: any) => (
+                                                    <Select
+                                                        {...field}
+                                                        options={headingLevelOptions}
+                                                        className="!w-[100px] !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                                        onChange={(option: any) => {
+                                                            form.setFieldValue('headerTextHeadingLevel', option?.value || 'h1')
+                                                        }}
+                                                        value={headingLevelOptions.find(option => option.value === field.value)}
+                                                    />
+                                                )}
+                                            </Field>
+                                            <Field
+                                                name="headerText"
+                                                component={Input}
+                                                className="flex-1 !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                                placeholder="Enter header text"
+                                            />
+                                        </div>
                                     </FormItem>
                                 </div>
 

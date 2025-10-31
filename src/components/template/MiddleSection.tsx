@@ -1,23 +1,34 @@
-import { Card, Input, Button } from '@/components/ui'
+import { Card, Input, Button, Select } from '@/components/ui'
 import { FormItem, FormContainer } from '@/components/ui/Form'
 import { Field, Form, Formik } from 'formik'
 import * as Yup from 'yup'
 import { useState, useRef, useEffect } from 'react'
 import { useUploadFileMutation } from '@/store/slices/fileUpload/fileUploadApiSlice'
 import { useGetHomeDataQuery, useUpdateHomeSectionMutation } from '@/store/slices/home'
-import { parseMiddleSection } from '@/services/HomeService'
+import { parseMiddleSection, ContentBlock } from '@/services/HomeService'
 import { toast, Notification } from '@/components/ui'
 import { RichTextEditor } from '@/components/shared'
 
 type MiddleSectionFormSchema = {
     headerText: string
+    headerTextHeadingLevel: string
     subHeaderText: string
     doctorSpeakVideo: string
     doctorSpeakVideoMediaFileId?: number
 }
 
+const headingLevelOptions = [
+    { value: 'h1', label: 'H1' },
+    { value: 'h2', label: 'H2' },
+    { value: 'h3', label: 'H3' },
+    { value: 'h4', label: 'H4' },
+    { value: 'h5', label: 'H5' },
+    { value: 'h6', label: 'H6' },
+]
+
 const validationSchema = Yup.object().shape({
     headerText: Yup.string().required('Header text is required'),
+    headerTextHeadingLevel: Yup.string().required('Header text heading level is required'),
     subHeaderText: Yup.string().required('Sub header text is required'),
     doctorSpeakVideo: Yup.string().required('Doctor speak video is required'),
 })
@@ -43,10 +54,18 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
         }
     }, [homeData, initialFormValues])
 
+    // Parse heading level from custom_css (e.g., "heading-level:h1") or default
+    const getHeadingLevel = (block: ContentBlock | undefined, defaultValue: string): string => {
+        if (!block?.custom_css) return defaultValue
+        const match = block.custom_css.match(/heading-level:\s*(h[1-6])/i)
+        return match ? match[1].toLowerCase() : defaultValue
+    }
+
     const getInitialValues = (): MiddleSectionFormSchema => {
         if (!homeData?.data) {
             return {
                 headerText: "",
+                headerTextHeadingLevel: 'h1',
                 subHeaderText: "",
                 doctorSpeakVideo: ""
             }
@@ -73,6 +92,7 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
         }
         
         const headerText = headerBlock?.title || "Our 20+ Years of Legacy & Clinical Excellence"
+        const headerTextHeadingLevel = getHeadingLevel(headerBlock, 'h1')
         
         // Second object: Custom block with content (Sub Header Text)
         // Try to find content block with Ramaiah Memorial Hospital text
@@ -99,6 +119,7 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
         
         const finalValues = {
             headerText: headerText,
+            headerTextHeadingLevel: headerTextHeadingLevel,
             subHeaderText: subHeaderText,
             doctorSpeakVideo: doctorSpeakVideo,
             doctorSpeakVideoMediaFileId: doctorSpeakVideoMediaFileId
@@ -206,15 +227,36 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
             const contentBlocks = []
             const changedObjects = []
             
-            // 1. Check if Header Text changed
-            const headerTextChanged = values.headerText 
+            // 1. Check if Header Text or Heading Level changed
+            const headerTextChanged = values.headerText !== initialValues.headerText
+            const headerTextHeadingLevelChanged = values.headerTextHeadingLevel !== initialValues.headerTextHeadingLevel
+            
             console.log('Header Text comparison:', {
                 current: values.headerText,
                 initial: initialValues.headerText,
                 changed: headerTextChanged
             })
+            console.log('Header Heading Level comparison:', {
+                current: values.headerTextHeadingLevel,
+                initial: initialValues.headerTextHeadingLevel,
+                changed: headerTextHeadingLevelChanged
+            })
             
-            if (headerTextChanged) {
+            if (headerTextChanged || headerTextHeadingLevelChanged) {
+                // Build custom_css with heading level, preserving existing custom_css if any
+                let customCss = headerBlock?.custom_css || ''
+                if (headerTextHeadingLevelChanged) {
+                    // Replace existing heading-level or add new one
+                    if (customCss.match(/heading-level:\s*h[1-6]/i)) {
+                        customCss = customCss.replace(/heading-level:\s*h[1-6]/i, `heading-level:${values.headerTextHeadingLevel}`)
+                    } else {
+                        customCss = customCss ? `${customCss}; heading-level:${values.headerTextHeadingLevel}` : `heading-level:${values.headerTextHeadingLevel}`
+                    }
+                } else if (!customCss.match(/heading-level:/i) && headerBlock) {
+                    // Add default if not present and block exists
+                    customCss = customCss ? `${customCss}; heading-level:${values.headerTextHeadingLevel}` : `heading-level:${values.headerTextHeadingLevel}`
+                }
+                
                 if (headerBlock) {
                     // Update existing header block
                     contentBlocks.push({
@@ -222,16 +264,18 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
                         block_type: headerBlock.block_type,
                         title: values.headerText,
                         content: values.headerText,
-                        display_order: headerBlock.display_order
+                        display_order: headerBlock.display_order,
+                        custom_css: customCss
                     })
                     console.log('Header block updated:', contentBlocks)
                 } else {
                     // Create new header block
-                contentBlocks.push({
-                    block_type: "text",
+                    contentBlocks.push({
+                        block_type: "text",
                         title: values.headerText,
-                    content: values.headerText
-                })
+                        content: values.headerText,
+                        custom_css: customCss
+                    })
                 }
                 changedObjects.push('Header Text')
             }
@@ -392,46 +436,65 @@ const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
                                             invalid={(errors.headerText && touched.headerText) as boolean}
                                             errorMessage={errors.headerText}
                                         >
-                                            <Field name="headerText">
-                                                {({ field, form }: any) => (
-                                                    <RichTextEditor
-                                                        value={field.value || ''}
-                                                        onChange={(value) => form.setFieldValue('headerText', value)}
-                                                        placeholder="Enter header text"
-                                                        theme="snow"
-                                                        modules={{
-                                                            toolbar: [
-                                                                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                                                                ['bold', 'italic', 'underline', 'strike'],
-                                                                [{ 'color': ['#D60F8C','#305FC2','#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#00ADEF', '#D60F8C'] }, { 'background': ['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#00ADEF', '#D60F8C'] }],
-                                                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                                                                [{ 'indent': '-1'}, { 'indent': '+1' }],
-                                                                [{ 'align': [] }],
-                                                                ['link', 'image'],
-                                                                ['clean']
-                                                            ],
-                                                            clipboard: {
-                                                                matchVisual: false
-                                                            }
-                                                        }}
-                                                        formats={[
-                                                            'header', 'bold', 'italic', 'underline', 'strike',
-                                                            'color', 'background', 'list', 'bullet', 'indent',
-                                                            'align', 'link', 'image'
-                                                        ]}
-                                                        style={{
-                                                            minHeight: '150px'
-                                                        }}
-                                                    />
-                                                )}
-                                            </Field>
+                                                    <Field name="headerTextHeadingLevel">
+                                                        {({ field, form }: any) => (
+                                                            <Select
+                                                                {...field}
+                                                                options={headingLevelOptions}
+                                                                className="!w-[100px] !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500 mb-3"
+                                                                onChange={(option: any) => {
+                                                                    form.setFieldValue('headerTextHeadingLevel', option?.value || 'h1')
+                                                                }}
+                                                                value={headingLevelOptions.find(option => option.value === field.value)}
+                                                            />
+                                                        )}
+                                                    </Field>
+                                            <div className="flex flex-col gap-3">
+                                                <div className="flex gap-3">
+                                                    <div className="flex-1">
+                                                        <Field name="headerText">
+                                                            {({ field, form }: any) => (
+                                                                <RichTextEditor
+                                                                    value={field.value || ''}
+                                                                    onChange={(value) => form.setFieldValue('headerText', value)}
+                                                                    placeholder="Enter header text"
+                                                                    theme="snow"
+                                                                    modules={{
+                                                                        toolbar: [
+                                                                            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                                                                            ['bold', 'italic', 'underline', 'strike'],
+                                                                            [{ 'color': ['#D60F8C','#305FC2','#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#00ADEF', '#D60F8C'] }, { 'background': ['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#00ADEF', '#D60F8C'] }],
+                                                                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                                                            [{ 'indent': '-1'}, { 'indent': '+1' }],
+                                                                            [{ 'align': [] }],
+                                                                            ['link', 'image'],
+                                                                            ['clean']
+                                                                        ],
+                                                                        clipboard: {
+                                                                            matchVisual: false
+                                                                        }
+                                                                    }}
+                                                                    formats={[
+                                                                        'header', 'bold', 'italic', 'underline', 'strike',
+                                                                        'color', 'background', 'list', 'bullet', 'indent',
+                                                                        'align', 'link', 'image'
+                                                                    ]}
+                                                                    style={{
+                                                                        minHeight: '150px'
+                                                                    }}
+                                                                />
+                                                            )}
+                                                        </Field>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </FormItem>
                                     </div>
 
                                     {/* Right Column */}
                                     <div className="space-y-4">
                                         <FormItem
-                                            label="Sub Header Text"
+                                            label="Content"
                                             labelClass="text-[#495057] font-inter text-[14px] font-medium leading-normal"
                                             invalid={(errors.subHeaderText && touched.subHeaderText) as boolean}
                                             errorMessage={errors.subHeaderText}

@@ -1,30 +1,43 @@
-import { Card, Input, Button } from '@/components/ui'
+import { Card, Input, Button, Select } from '@/components/ui'
 import { FormItem, FormContainer } from '@/components/ui/Form'
 import { Field, Form, Formik } from 'formik'
 import * as Yup from 'yup'
 import { useState, useRef, useEffect } from 'react'
 import { useGetHomeDataQuery, useUpdateHomeSectionMutation } from '@/store/slices/home'
 import { useUploadFileMutation } from '@/store/slices/fileUpload/fileUploadApiSlice'
-import { parseAccreditationsSection } from '@/services/HomeService'
+import { parseAccreditationsSection, ContentBlock } from '@/services/HomeService'
 import { toast, Notification } from '@/components/ui'
 
 interface Certificate {
     id: string
     name: string
+    nameHeadingLevel: string
     image: string
     media_file_id?: number
 }
 
 type AccreditationsFormSchema = {
     headerText: string
+    headerTextHeadingLevel: string
     certificates: Certificate[]
 }
 
+const headingLevelOptions = [
+    { value: 'h1', label: 'H1' },
+    { value: 'h2', label: 'H2' },
+    { value: 'h3', label: 'H3' },
+    { value: 'h4', label: 'H4' },
+    { value: 'h5', label: 'H5' },
+    { value: 'h6', label: 'H6' },
+]
+
 const validationSchema = Yup.object().shape({
     headerText: Yup.string().required('Header text is required'),
+    headerTextHeadingLevel: Yup.string().required('Header text heading level is required'),
     certificates: Yup.array().of(
         Yup.object().shape({
             name: Yup.string().required('Certificate name is required'),
+            nameHeadingLevel: Yup.string().required('Certificate name heading level is required'),
             image: Yup.string().required('Certificate image is required'),
         })
     ).min(1, 'At least one certificate is required'),
@@ -47,15 +60,23 @@ const AccreditationsSection = () => {
         }
     }, [homeData, initialFormValues])
 
+    // Parse heading level from custom_css (e.g., "heading-level:h1") or default
+    const getHeadingLevel = (block: ContentBlock | undefined, defaultValue: string): string => {
+        if (!block?.custom_css) return defaultValue
+        const match = block.custom_css.match(/heading-level:\s*(h[1-6])/i)
+        return match ? match[1].toLowerCase() : defaultValue
+    }
+
     const getInitialValues = (): AccreditationsFormSchema => {
         if (!homeData?.data) {
             return {
                 headerText: 'Our Accreditations & Certifications',
+                headerTextHeadingLevel: 'h1',
                 certificates: [
-                    { id: '1', name: 'JCI', image: 'JCI_Certificate.png' },
-                    { id: '2', name: 'JCI', image: 'JCI_Certificate.png' },
-                    { id: '3', name: 'JCI', image: 'JCI_Certificate.png' },
-                    { id: '4', name: 'JCI', image: 'JCI_Certificate.png' }
+                    { id: '1', name: 'JCI', nameHeadingLevel: 'h2', image: 'JCI_Certificate.png' },
+                    { id: '2', name: 'JCI', nameHeadingLevel: 'h2', image: 'JCI_Certificate.png' },
+                    { id: '3', name: 'JCI', nameHeadingLevel: 'h2', image: 'JCI_Certificate.png' },
+                    { id: '4', name: 'JCI', nameHeadingLevel: 'h2', image: 'JCI_Certificate.png' }
                 ]
             }
         }
@@ -66,28 +87,31 @@ const AccreditationsSection = () => {
         // Get header text from text block type
         const textBlock = accreditationBlocks.find(block => block.block_type === 'text')
         const headerText = textBlock?.content || textBlock?.title || 'Our Accreditations & Certifications'
+        const headerTextHeadingLevel = getHeadingLevel(textBlock, 'h1')
         
         // Get certificates from image block type
         const imageBlocks = accreditationBlocks.filter(block => block.block_type === 'image')
         const certificates = imageBlocks.length > 0 ? imageBlocks.map((block, index) => ({
             id: block.id.toString(),
             name: block.title,
+            nameHeadingLevel: getHeadingLevel(block, 'h2'),
             image: block.media_files?.[0]?.media_file?.original_filename || 'certificate.png',
             media_file_id: block.media_files?.[0]?.media_file?.id
         })) : [
-            { id: '1', name: 'JCI', image: 'JCI_Certificate.png' },
-            { id: '2', name: 'JCI', image: 'JCI_Certificate.png' },
-            { id: '3', name: 'JCI', image: 'JCI_Certificate.png' },
-            { id: '4', name: 'JCI', image: 'JCI_Certificate.png' }
+            { id: '1', name: 'JCI', nameHeadingLevel: 'h2', image: 'JCI_Certificate.png' },
+            { id: '2', name: 'JCI', nameHeadingLevel: 'h2', image: 'JCI_Certificate.png' },
+            { id: '3', name: 'JCI', nameHeadingLevel: 'h2', image: 'JCI_Certificate.png' },
+            { id: '4', name: 'JCI', nameHeadingLevel: 'h2', image: 'JCI_Certificate.png' }
         ]
         
         return {
             headerText: headerText,
+            headerTextHeadingLevel: headerTextHeadingLevel,
             certificates: certificates
         }
     }
 
-    const handleCertificateChange = (setFieldValue: any, certificates: Certificate[], id: string, field: 'name' | 'image', value: string) => {
+    const handleCertificateChange = (setFieldValue: any, certificates: Certificate[], id: string, field: 'name' | 'image' | 'nameHeadingLevel', value: string) => {
         const updatedCertificates = certificates.map(cert => 
             cert.id === id ? { ...cert, [field]: value } : cert
         )
@@ -164,6 +188,7 @@ const AccreditationsSection = () => {
         const newCertificate: Certificate = {
             id: Date.now().toString(),
             name: 'JCI',
+            nameHeadingLevel: 'h2',
             image: 'JCI_Certificate.png'
         }
         setFieldValue('certificates', [...certificates, newCertificate])
@@ -190,32 +215,49 @@ const AccreditationsSection = () => {
             const contentBlocks: any[] = []
             const changedObjects: string[] = []
             
-            // Check if header text changed
-            const headerTextChanged = values.headerText
-            
             // Check if certificates changed
             const initialCertificates = initialValues.certificates
             const currentCertificates = values.certificates
             
-            // Check if certificates array changed (length, names, or media_file_ids)
+            // Check if certificates array changed (length, names, nameHeadingLevels, or media_file_ids)
             const certificatesChanged = 
                 initialCertificates.length !== currentCertificates.length ||
                 initialCertificates.some((initial, index) => {
                     const current = currentCertificates[index]
                     return !current || 
                            initial.name !== current.name || 
+                           initial.nameHeadingLevel !== current.nameHeadingLevel ||
                            initial.media_file_id !== current.media_file_id
                 })
             
-            // Handle header text changes (text block type)
-            if (headerTextChanged) {
+            // Handle header text and heading level changes (text block type)
+            const headerTextChanged = values.headerText !== initialValues.headerText
+            const headerTextHeadingLevelChanged = values.headerTextHeadingLevel !== initialValues.headerTextHeadingLevel
+            
+            if (headerTextChanged || headerTextHeadingLevelChanged) {
                 console.log('Header text changed:', {
                     initial: initialValues.headerText,
-                    current: values.headerText
+                    current: values.headerText,
+                    headingLevelInitial: initialValues.headerTextHeadingLevel,
+                    headingLevelCurrent: values.headerTextHeadingLevel
                 })
                 
                 // Find existing text block or create new one
                 const existingTextBlock = accreditationBlocks.find(block => block.block_type === 'text')
+                
+                // Build custom_css with heading level, preserving existing custom_css if any
+                let customCss = existingTextBlock?.custom_css || ''
+                if (headerTextHeadingLevelChanged) {
+                    // Replace existing heading-level or add new one
+                    if (customCss.match(/heading-level:\s*h[1-6]/i)) {
+                        customCss = customCss.replace(/heading-level:\s*h[1-6]/i, `heading-level:${values.headerTextHeadingLevel}`)
+                    } else {
+                        customCss = customCss ? `${customCss}; heading-level:${values.headerTextHeadingLevel}` : `heading-level:${values.headerTextHeadingLevel}`
+                    }
+                } else if (!customCss.match(/heading-level:/i) && existingTextBlock) {
+                    // Add default if not present and block exists
+                    customCss = customCss ? `${customCss}; heading-level:${values.headerTextHeadingLevel}` : `heading-level:${values.headerTextHeadingLevel}`
+                }
                 
                 if (existingTextBlock) {
                     // Update existing text block
@@ -224,6 +266,7 @@ const AccreditationsSection = () => {
                         block_type: existingTextBlock.block_type,
                         title: values.headerText,
                         content: values.headerText,
+                        custom_css: customCss,
                         media_files: []
                     })
                 } else {
@@ -232,6 +275,7 @@ const AccreditationsSection = () => {
                         block_type: "text",
                         title: values.headerText,
                         content: values.headerText,
+                        custom_css: customCss,
                         media_files: []
                     })
                 }
@@ -252,8 +296,9 @@ const AccreditationsSection = () => {
                     
                     // Check if this certificate has changed
                     const nameChanged = !initialCertificate || initialCertificate.name !== certificate.name
+                    const nameHeadingLevelChanged = !initialCertificate || initialCertificate.nameHeadingLevel !== certificate.nameHeadingLevel
                     const mediaFileIdChanged = !initialCertificate || initialCertificate.media_file_id !== certificate.media_file_id
-                    const hasChanges = nameChanged || mediaFileIdChanged
+                    const hasChanges = nameChanged || nameHeadingLevelChanged || mediaFileIdChanged
                     
                     if (hasChanges) {
                         // Find existing image block for this certificate by ID (titles may repeat like "JCI")
@@ -262,10 +307,25 @@ const AccreditationsSection = () => {
                             String(block.id) === certificate.id
                         )
                         
+                        // Build custom_css with heading level, preserving existing custom_css if any
+                        let customCss = existingBlock?.custom_css || ''
+                        if (nameHeadingLevelChanged) {
+                            // Replace existing heading-level or add new one
+                            if (customCss.match(/heading-level:\s*h[1-6]/i)) {
+                                customCss = customCss.replace(/heading-level:\s*h[1-6]/i, `heading-level:${certificate.nameHeadingLevel}`)
+                            } else {
+                                customCss = customCss ? `${customCss}; heading-level:${certificate.nameHeadingLevel}` : `heading-level:${certificate.nameHeadingLevel}`
+                            }
+                        } else if (!customCss.match(/heading-level:/i) && existingBlock) {
+                            // Add default if not present and block exists
+                            customCss = customCss ? `${customCss}; heading-level:${certificate.nameHeadingLevel}` : `heading-level:${certificate.nameHeadingLevel}`
+                        }
+                        
                         const contentBlock: any = {
                             block_type: "image",
                             title: certificate.name,
-                            content: certificate.name
+                            content: certificate.name,
+                            custom_css: customCss
                         }
                         
                         // Add ID if updating existing block
@@ -381,12 +441,27 @@ const AccreditationsSection = () => {
                                         invalid={!!(errors.headerText && touched.headerText)}
                                         errorMessage={errors.headerText}
                                     >
-                                        <Input
-                                            value={values.headerText}
-                                            onChange={(e) => setFieldValue('headerText', e.target.value)}
-                                            className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                                            placeholder="Enter header text"
-                                        />
+                                        <div className="flex gap-3">
+                                            <Field name="headerTextHeadingLevel">
+                                                {({ field, form }: any) => (
+                                                    <Select
+                                                        {...field}
+                                                        options={headingLevelOptions}
+                                                        className="!w-[100px] !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                                        onChange={(option: any) => {
+                                                            form.setFieldValue('headerTextHeadingLevel', option?.value || 'h1')
+                                                        }}
+                                                        value={headingLevelOptions.find(option => option.value === field.value)}
+                                                    />
+                                                )}
+                                            </Field>
+                                            <Input
+                                                value={values.headerText}
+                                                onChange={(e) => setFieldValue('headerText', e.target.value)}
+                                                className="flex-1 !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                                placeholder="Enter header text"
+                                            />
+                                        </div>
                                     </FormItem>
                                 </div>
 
@@ -412,12 +487,22 @@ const AccreditationsSection = () => {
                                                     invalid={(errors.certificates?.[index] && typeof errors.certificates[index] === 'object' && (errors.certificates[index] as any)?.name && touched.certificates?.[index]?.name) as boolean}
                                                     errorMessage={errors.certificates?.[index] && typeof errors.certificates[index] === 'object' ? String((errors.certificates[index] as any)?.name || '') : undefined}
                                                 >
-                                                    <Input
-                                                        value={certificate.name}
-                                                        onChange={(e) => handleCertificateChange(setFieldValue, values.certificates, certificate.id, 'name', e.target.value)}
-                                                        className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                                                        placeholder="Enter certificate name"
-                                                    />
+                                                    <div className="flex gap-3">
+                                                        <Select
+                                                            options={headingLevelOptions}
+                                                            className="!w-[100px] !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                                            onChange={(option: any) => {
+                                                                handleCertificateChange(setFieldValue, values.certificates, certificate.id, 'nameHeadingLevel', option?.value || 'h2')
+                                                            }}
+                                                            value={headingLevelOptions.find(option => option.value === certificate.nameHeadingLevel)}
+                                                        />
+                                                        <Input
+                                                            value={certificate.name}
+                                                            onChange={(e) => handleCertificateChange(setFieldValue, values.certificates, certificate.id, 'name', e.target.value)}
+                                                            className="flex-1 !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                                            placeholder="Enter certificate name"
+                                                        />
+                                                    </div>
                                                 </FormItem>
                                             </div>
 

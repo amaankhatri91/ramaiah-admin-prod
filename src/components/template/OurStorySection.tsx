@@ -1,34 +1,49 @@
-import { Card, Input, Button } from '@/components/ui'
+import { Card, Input, Button, Select } from '@/components/ui'
 import { FormItem, FormContainer } from '@/components/ui/Form'
 import { Field, Form, Formik } from 'formik'
 import * as Yup from 'yup'
 import { useState, useRef, useEffect } from 'react'
 import { useGetHomeDataQuery, useUpdateHomeSectionMutation } from '@/store/slices/home'
 import { useUploadFileMutation } from '@/store/slices/fileUpload/fileUploadApiSlice'
-import { parseOurStorySection } from '@/services/HomeService'
+import { parseOurStorySection, ContentBlock } from '@/services/HomeService'
 import { toast, Notification } from '@/components/ui'
 
 interface StoryBox {
     id: string
     header: string
+    headerHeadingLevel: string
     subHeader: string
+    subHeaderHeadingLevel: string
     icon: string
     mediaFileId?: number
 }
 
 type OurStoryFormSchema = {
     headerText: string
+    headerTextHeadingLevel: string
     subHeaderText: string
     storyBoxes: StoryBox[]
 }
 
+const headingLevelOptions = [
+    { value: 'h1', label: 'H1' },
+    { value: 'h2', label: 'H2' },
+    { value: 'h3', label: 'H3' },
+    { value: 'h4', label: 'H4' },
+    { value: 'h5', label: 'H5' },
+    { value: 'h6', label: 'H6' },
+]
+
 const validationSchema = Yup.object().shape({
     headerText: Yup.string().required('Header text is required'),
+    headerTextHeadingLevel: Yup.string().required('Header text heading level is required'),
     subHeaderText: Yup.string(),
     storyBoxes: Yup.array().of(
         Yup.object().shape({
             header: Yup.string().required('Header is required'),
+            headerHeadingLevel: Yup.string().required('Header heading level is required'),
             subHeader: Yup.string(),
+            subHeaderHeadingLevel: Yup.string().required('Sub header heading level is required'),
             icon: Yup.string().required('Icon is required'),
         })
     ).min(1, 'At least one story box is required'),
@@ -51,16 +66,41 @@ const OurStorySection = () => {
         }
     }, [homeData, initialFormValues])
 
+    // Parse heading level from custom_css (e.g., "heading-level:h1") or default
+    const getHeadingLevel = (block: ContentBlock | undefined, defaultValue: string): string => {
+        if (!block?.custom_css) return defaultValue
+        const match = block.custom_css.match(/heading-level:\s*(h[1-6])/i)
+        return match ? match[1].toLowerCase() : defaultValue
+    }
+
+    // Parse header heading level from custom_css (e.g., "header-heading-level:h2") or default
+    const getHeaderHeadingLevel = (block: ContentBlock | undefined, defaultValue: string): string => {
+        if (!block?.custom_css) return defaultValue
+        const match = block.custom_css.match(/header-heading-level:\s*(h[1-6])/i)
+        return match ? match[1].toLowerCase() : defaultValue
+    }
+
+    // Parse subheader heading level from custom_css (e.g., "subheader-heading-level:h3") or default
+    const getSubHeaderHeadingLevel = (block: ContentBlock | undefined, defaultValue: string): string => {
+        if (!block?.custom_css) return defaultValue
+        const match = block.custom_css.match(/subheader-heading-level:\s*(h[1-6])/i)
+        return match ? match[1].toLowerCase() : defaultValue
+    }
+
     const getInitialValues = (): OurStoryFormSchema => {
         if (!homeData?.data) {
             return {
                 headerText: "Our Story",
+                headerTextHeadingLevel: 'h1',
                 subHeaderText: "",
                 storyBoxes: [
-                    { id: '1', header: '550+', subHeader: 'Beds', icon: 'icon_01.svg' },
-                    { id: '2', header: '550+', subHeader: 'Beds', icon: 'icon_01.svg' },
-                    { id: '3', header: '550+', subHeader: 'Beds', icon: 'icon_01.svg' },
-                    { id: '4', header: '550+', subHeader: 'Beds', icon: 'icon_01.svg' }
+                    { id: '1', header: '550+', headerHeadingLevel: 'h2', subHeader: 'Beds', subHeaderHeadingLevel: 'h3', icon: 'icon_01.svg' },
+                    { id: '2', header: '550+', headerHeadingLevel: 'h2', subHeader: 'Beds', subHeaderHeadingLevel: 'h3', icon: 'icon_01.svg' },
+                    { id: '3', header: '550+', headerHeadingLevel: 'h2', subHeader: 'Beds', subHeaderHeadingLevel: 'h3', icon: 'icon_01.svg' },
+                    { id: '4', header: '550+', headerHeadingLevel: 'h2', subHeader: 'Beds', subHeaderHeadingLevel: 'h3', icon: 'icon_01.svg' },
+                    { id: '5', header: '550+', headerHeadingLevel: 'h2', subHeader: 'Beds', subHeaderHeadingLevel: 'h3', icon: 'icon_01.svg' },
+                    { id: '6', header: '550+', headerHeadingLevel: 'h2', subHeader: 'Beds', subHeaderHeadingLevel: 'h3', icon: 'icon_01.svg' },
+                    { id: '7', header: '550+', headerHeadingLevel: 'h2', subHeader: 'Beds', subHeaderHeadingLevel: 'h3', icon: 'icon_01.svg' }
                 ]
             }
         }
@@ -71,30 +111,41 @@ const OurStorySection = () => {
         // Get header text from text block type
         const textBlock = storyBlocks.find(block => block.block_type === 'text')
         const headerText = textBlock?.content || textBlock?.title || "Our Story"
+        const headerTextHeadingLevel = getHeadingLevel(textBlock, 'h1')
         
         // Get story boxes from statistic block type
         const statisticBlocks = storyBlocks.filter(block => block.block_type === 'statistic')
         const storyBoxes = statisticBlocks.map((block, index) => ({
             id: (index + 1).toString(),
             header: block.statistics?.[0]?.statistic_value || block.content || '550+',
+            headerHeadingLevel: getHeaderHeadingLevel(block, 'h2'),
             subHeader: block.statistics?.[0]?.statistic_text || 'Beds',
+            subHeaderHeadingLevel: getSubHeaderHeadingLevel(block, 'h3'),
             icon: block.media_files?.[0]?.media_file?.original_filename || 'icon_01.svg',
             mediaFileId: block.media_files?.[0]?.media_file_id
         }))
         
+        // Ensure we have 7 boxes
+        while (storyBoxes.length < 7) {
+            storyBoxes.push({
+                id: (storyBoxes.length + 1).toString(),
+                header: '550+',
+                headerHeadingLevel: 'h2',
+                subHeader: 'Beds',
+                subHeaderHeadingLevel: 'h3',
+                icon: 'icon_01.svg'
+            })
+        }
+        
         return {
             headerText: headerText,
+            headerTextHeadingLevel: headerTextHeadingLevel,
             subHeaderText: "", // No sub header for now
-            storyBoxes: storyBoxes.length > 0 ? storyBoxes : [
-                { id: '1', header: '550+', subHeader: 'Beds', icon: 'icon_01.svg' },
-                { id: '2', header: '550+', subHeader: 'Beds', icon: 'icon_01.svg' },
-                { id: '3', header: '550+', subHeader: 'Beds', icon: 'icon_01.svg' },
-                { id: '4', header: '550+', subHeader: 'Beds', icon: 'icon_01.svg' }
-            ]
+            storyBoxes: storyBoxes
         }
     }
 
-    const handleStoryBoxChange = (setFieldValue: any, storyBoxes: StoryBox[], id: string, field: 'header' | 'subHeader' | 'icon', value: string) => {
+    const handleStoryBoxChange = (setFieldValue: any, storyBoxes: StoryBox[], id: string, field: 'header' | 'subHeader' | 'icon' | 'headerHeadingLevel' | 'subHeaderHeadingLevel', value: string) => {
         const updatedBoxes = storyBoxes.map(box => 
             box.id === id ? { ...box, [field]: value } : box
         )
@@ -202,13 +253,28 @@ const OurStorySection = () => {
             const contentBlocks: any[] = []
             const changedObjects: string[] = []
             
-            // 1. Check if Header Text changed (for text block type)
-            if (headerBlock && values.headerText !== initialValues.headerText) {
+            // 1. Check if Header Text or Header Text Heading Level changed (for text block type)
+            const headerTextChanged = headerBlock && values.headerText !== initialValues.headerText
+            const headerTextHeadingLevelChanged = headerBlock && values.headerTextHeadingLevel !== initialValues.headerTextHeadingLevel
+            
+            if (headerBlock && (headerTextChanged || headerTextHeadingLevelChanged)) {
+                // Build custom_css with heading level, preserving existing custom_css if any
+                let customCss = headerBlock.custom_css || ''
+                if (headerTextHeadingLevelChanged) {
+                    // Replace existing heading-level or add new one
+                    if (customCss.match(/heading-level:\s*h[1-6]/i)) {
+                        customCss = customCss.replace(/heading-level:\s*h[1-6]/i, `heading-level:${values.headerTextHeadingLevel}`)
+                    } else {
+                        customCss = customCss ? `${customCss}; heading-level:${values.headerTextHeadingLevel}` : `heading-level:${values.headerTextHeadingLevel}`
+                    }
+                }
+                
                 contentBlocks.push({
                     id: headerBlock.id,
                     block_type: 'text',
                     title: values.headerText, // Use the header text as the title
-                    content: values.headerText
+                    content: values.headerText,
+                    custom_css: customCss
                 })
                 changedObjects.push('Header Text')
             }
@@ -222,21 +288,53 @@ const OurStorySection = () => {
                 
                 // Check if any field changed
                 const headerChanged = box.header !== initialBox.header
+                const headerHeadingLevelChanged = box.headerHeadingLevel !== initialBox.headerHeadingLevel
                 const subHeaderChanged = box.subHeader !== initialBox.subHeader
+                const subHeaderHeadingLevelChanged = box.subHeaderHeadingLevel !== initialBox.subHeaderHeadingLevel
                 const iconChanged = box.mediaFileId !== initialBox.mediaFileId
                 
-                if (headerChanged || subHeaderChanged || iconChanged) {
+                if (headerChanged || headerHeadingLevelChanged || subHeaderChanged || subHeaderHeadingLevelChanged || iconChanged) {
                     console.log(`Story Box ${index + 1} changed:`, {
                         header: { current: box.header, initial: initialBox.header, changed: headerChanged },
+                        headerHeadingLevel: { current: box.headerHeadingLevel, initial: initialBox.headerHeadingLevel, changed: headerHeadingLevelChanged },
                         subHeader: { current: box.subHeader, initial: initialBox.subHeader, changed: subHeaderChanged },
+                        subHeaderHeadingLevel: { current: box.subHeaderHeadingLevel, initial: initialBox.subHeaderHeadingLevel, changed: subHeaderHeadingLevelChanged },
                         icon: { current: box.mediaFileId, initial: initialBox.mediaFileId, changed: iconChanged }
                     })
+                    
+                    // Build custom_css with heading levels, preserving existing custom_css if any
+                    let customCss = correspondingBlock.custom_css || ''
+                    
+                    // Handle header heading level
+                    if (headerHeadingLevelChanged) {
+                        if (customCss.match(/header-heading-level:\s*h[1-6]/i)) {
+                            customCss = customCss.replace(/header-heading-level:\s*h[1-6]/i, `header-heading-level:${box.headerHeadingLevel}`)
+                        } else {
+                            customCss = customCss ? `${customCss}; header-heading-level:${box.headerHeadingLevel}` : `header-heading-level:${box.headerHeadingLevel}`
+                        }
+                    } else if (!customCss.match(/header-heading-level:/i)) {
+                        // Add default if not present
+                        customCss = customCss ? `${customCss}; header-heading-level:${box.headerHeadingLevel}` : `header-heading-level:${box.headerHeadingLevel}`
+                    }
+                    
+                    // Handle sub header heading level
+                    if (subHeaderHeadingLevelChanged) {
+                        if (customCss.match(/subheader-heading-level:\s*h[1-6]/i)) {
+                            customCss = customCss.replace(/subheader-heading-level:\s*h[1-6]/i, `subheader-heading-level:${box.subHeaderHeadingLevel}`)
+                        } else {
+                            customCss = customCss ? `${customCss}; subheader-heading-level:${box.subHeaderHeadingLevel}` : `subheader-heading-level:${box.subHeaderHeadingLevel}`
+                        }
+                    } else if (!customCss.match(/subheader-heading-level:/i)) {
+                        // Add default if not present
+                        customCss = customCss ? `${customCss}; subheader-heading-level:${box.subHeaderHeadingLevel}` : `subheader-heading-level:${box.subHeaderHeadingLevel}`
+                    }
                     
                     const contentBlock: any = {
                         id: correspondingBlock.id,
                         block_type: 'statistic',
                         title: box.header, // Use the box header as the title
                         content: box.header, // Update the content with new header
+                        custom_css: customCss,
                         statistics: [{
                             id: correspondingBlock.statistics?.[0]?.id || 0,
                             content_block_id: correspondingBlock.id,
@@ -355,12 +453,27 @@ const OurStorySection = () => {
                                             invalid={(errors.headerText && touched.headerText) as boolean}
                                             errorMessage={errors.headerText}
                                         >
-                                            <Field
-                                                name="headerText"
-                                                component={Input}
-                                                className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                                                placeholder="Enter header text"
-                                            />
+                                            <div className="flex gap-3">
+                                                <Field name="headerTextHeadingLevel">
+                                                    {({ field, form }: any) => (
+                                                        <Select
+                                                            {...field}
+                                                            options={headingLevelOptions}
+                                                            className="!w-[100px] !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                                            onChange={(option: any) => {
+                                                                form.setFieldValue('headerTextHeadingLevel', option?.value || 'h1')
+                                                            }}
+                                                            value={headingLevelOptions.find(option => option.value === field.value)}
+                                                        />
+                                                    )}
+                                                </Field>
+                                                <Field
+                                                    name="headerText"
+                                                    component={Input}
+                                                    className="flex-1 !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                                    placeholder="Enter header text"
+                                                />
+                                            </div>
                                         </FormItem>
                                 </div>
 
@@ -376,12 +489,22 @@ const OurStorySection = () => {
                                                     invalid={(errors.storyBoxes?.[index] && typeof errors.storyBoxes[index] === 'object' && (errors.storyBoxes[index] as any)?.header && touched.storyBoxes?.[index]?.header) as boolean}
                                                     errorMessage={errors.storyBoxes?.[index] && typeof errors.storyBoxes[index] === 'object' ? String((errors.storyBoxes[index] as any)?.header || '') : undefined}
                                                 >
-                                                    <Input
-                                                        value={box.header}
-                                                        onChange={(e) => handleStoryBoxChange(setFieldValue, values.storyBoxes, box.id, 'header', e.target.value)}
-                                                        className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                                                        placeholder="Enter header"
-                                                    />
+                                                    <div className="flex gap-3">
+                                                        <Select
+                                                            options={headingLevelOptions}
+                                                            className="!w-[100px] !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                                            onChange={(option: any) => {
+                                                                handleStoryBoxChange(setFieldValue, values.storyBoxes, box.id, 'headerHeadingLevel', option?.value || 'h2')
+                                                            }}
+                                                            value={headingLevelOptions.find(option => option.value === box.headerHeadingLevel)}
+                                                        />
+                                                        <Input
+                                                            value={box.header}
+                                                            onChange={(e) => handleStoryBoxChange(setFieldValue, values.storyBoxes, box.id, 'header', e.target.value)}
+                                                            className="flex-1 !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                                            placeholder="Enter header"
+                                                        />
+                                                    </div>
                                                 </FormItem>
                                             </div>
 
@@ -393,12 +516,22 @@ const OurStorySection = () => {
                                                     invalid={(errors.storyBoxes?.[index] && typeof errors.storyBoxes[index] === 'object' && (errors.storyBoxes[index] as any)?.subHeader && touched.storyBoxes?.[index]?.subHeader) as boolean}
                                                     errorMessage={errors.storyBoxes?.[index] && typeof errors.storyBoxes[index] === 'object' ? String((errors.storyBoxes[index] as any)?.subHeader || '') : undefined}
                                                 >
-                                                    <Input
-                                                        value={box.subHeader}
-                                                        onChange={(e) => handleStoryBoxChange(setFieldValue, values.storyBoxes, box.id, 'subHeader', e.target.value)}
-                                                        className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                                                        placeholder="Enter sub header"
-                                                    />
+                                                    <div className="flex gap-3">
+                                                        <Select
+                                                            options={headingLevelOptions}
+                                                            className="!w-[100px] !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                                            onChange={(option: any) => {
+                                                                handleStoryBoxChange(setFieldValue, values.storyBoxes, box.id, 'subHeaderHeadingLevel', option?.value || 'h3')
+                                                            }}
+                                                            value={headingLevelOptions.find(option => option.value === box.subHeaderHeadingLevel)}
+                                                        />
+                                                        <Input
+                                                            value={box.subHeader}
+                                                            onChange={(e) => handleStoryBoxChange(setFieldValue, values.storyBoxes, box.id, 'subHeader', e.target.value)}
+                                                            className="flex-1 !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                                            placeholder="Enter sub header"
+                                                        />
+                                                    </div>
                                                 </FormItem>
                                             </div>
 
