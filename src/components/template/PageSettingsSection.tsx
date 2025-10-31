@@ -1,8 +1,9 @@
-import { Card, Input, Button, Select } from '@/components/ui'
+import { Card, Input, Button } from '@/components/ui'
 import { FormItem, FormContainer } from '@/components/ui/Form'
 import { Field, Form, Formik } from 'formik'
 import * as Yup from 'yup'
 import { toast, Notification } from '@/components/ui'
+import { useGetPageSettingsQuery, useUpdateHomeDataMutation } from '@/store/slices/home/homeApiSlice'
 
 type PageSettingsFormSchema = {
     pageType: string
@@ -20,34 +21,40 @@ const validationSchema = Yup.object().shape({
     seoDescription: Yup.string().required('SEO description is required'),
 })
 
-const pageTypeOptions = [
-    { value: 'home', label: 'Home' },
-    { value: 'about', label: 'About' },
-    { value: 'services', label: 'Services' },
-    { value: 'contact', label: 'Contact' },
-    { value: 'blog', label: 'Blog' },
-    { value: 'custom', label: 'Custom' },
-]
-
 const PageSettingsSection = () => {
+    const { data: pageSettingsData, isLoading: isLoadingSettings, error: settingsError } = useGetPageSettingsQuery()
+    const [updateHomeData, { isLoading: isUpdating }] = useUpdateHomeDataMutation()
+
     const getInitialValues = (): PageSettingsFormSchema => {
+        const pageData = pageSettingsData?.data
+
         return {
-            pageType: '',
-            pageName: '',
-            seoTitle: '',
-            seoKeyword: '',
-            seoDescription: '',
+            pageType: pageData?.page_type || '',
+            pageName: pageData?.slug || '',
+            seoTitle: pageData?.meta_title || '',
+            seoKeyword: pageData?.meta_keywords || '',
+            seoDescription: pageData?.meta_description || '',
         }
     }
 
     const onSubmit = async (values: PageSettingsFormSchema) => {
         try {
-            // TODO: Implement API call to save page settings
-            console.log('Page settings to save:', values)
+            // Map form values to API payload
+            const payload = {
+                page_type: values.pageType,
+                slug: values.pageName,
+                meta_title: values.seoTitle,
+                meta_keywords: values.seoKeyword,
+                meta_description: values.seoDescription,
+            }
+
+            console.log('Page settings to save:', payload)
+            
+            const response = await updateHomeData(payload).unwrap()
             
             toast.push(
                 <Notification type="success" duration={2500} title="Success">
-                    Page settings saved successfully
+                    {response.message || 'Page settings saved successfully'}
                 </Notification>,
                 { placement: 'top-end' }
             )
@@ -69,15 +76,26 @@ const PageSettingsSection = () => {
                     Page Settings
                 </p>
 
-                <Formik
-                    initialValues={getInitialValues()}
-                    validationSchema={validationSchema}
-                    onSubmit={onSubmit}
-                >
+                {isLoadingSettings ? (
+                    <div className="flex justify-center items-center py-8">
+                        <div className="text-gray-500">Loading page settings...</div>
+                    </div>
+                ) : settingsError ? (
+                    <div className="flex justify-center items-center py-8">
+                        <div className="text-red-500">Error loading page settings</div>
+                    </div>
+                ) : (
+                    <Formik
+                        key={pageSettingsData?.data?.id || 'initial'}
+                        initialValues={getInitialValues()}
+                        validationSchema={validationSchema}
+                        onSubmit={onSubmit}
+                        enableReinitialize={true}
+                    >
                     {({ values, setFieldValue, touched, errors, isSubmitting }) => (
                         <Form>
                             <FormContainer>
-                                {/* Page Type Dropdown */}
+                                {/* Page Type Input */}
                                 <div className="mb-6">
                                     <FormItem
                                         label="Page Type"
@@ -85,20 +103,12 @@ const PageSettingsSection = () => {
                                         invalid={(errors.pageType && touched.pageType) as boolean}
                                         errorMessage={errors.pageType}
                                     >
-                                        <Field name="pageType">
-                                            {({ field, form }: any) => (
-                                                <Select
-                                                    {...field}
-                                                    options={pageTypeOptions}
-                                                    className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                                                    placeholder="Select page type"
-                                                    onChange={(option: any) => {
-                                                        form.setFieldValue('pageType', option?.value || '')
-                                                    }}
-                                                    value={pageTypeOptions.find(option => option.value === field.value)}
-                                                />
-                                            )}
-                                        </Field>
+                                        <Field
+                                            name="pageType"
+                                            component={Input}
+                                            className="w-full !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                            placeholder="Enter page type"
+                                        />
                                     </FormItem>
                                 </div>
 
@@ -178,16 +188,17 @@ const PageSettingsSection = () => {
                                 <div className="flex justify-end">
                                     <Button
                                         type="submit"
-                                        loading={isSubmitting}
+                                        loading={isSubmitting || isUpdating}
                                         className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white px-4 py-2 font-medium transition-all duration-200"
                                     >
-                                        {isSubmitting ? 'Saving...' : 'Save'}
+                                        {(isSubmitting || isUpdating) ? 'Saving...' : 'Save'}
                                     </Button>
                                 </div>
                             </FormContainer>
                         </Form>
                     )}
-                </Formik>
+                    </Formik>
+                )}
             </div>
         </Card>
     )

@@ -69,6 +69,35 @@ export const homeApiSlice = RtkQueryService.injectEndpoints({
                 }
             },
         }),
+        getPageSettings: builder.query<any, void>({
+            query: () => ({
+                url: '/admin/home',
+                method: 'GET',
+            }),
+            transformResponse: (response: any) => {
+                // Return the full page metadata from the response
+                return {
+                    status: response.status || 1,
+                    message: response.message || 'Page settings fetched successfully',
+                    data: {
+                        id: response.data?.id,
+                        slug: response.data?.slug,
+                        title: response.data?.title,
+                        page_type: response.data?.page_type,
+                        meta_title: response.data?.meta_title,
+                        meta_description: response.data?.meta_description,
+                        meta_keywords: response.data?.meta_keywords,
+                    },
+                }
+            },
+            transformErrorResponse: (response: any) => {
+                return {
+                    status: 0,
+                    message: response.data?.message || 'Failed to fetch page settings',
+                    data: null,
+                }
+            },
+        }),
     }),
     overrideExisting: false,
 })
@@ -76,5 +105,6 @@ export const homeApiSlice = RtkQueryService.injectEndpoints({
 export const { 
     useGetHomeDataQuery, 
     useUpdateHomeDataMutation,
-    useUpdateHomeSectionMutation 
+    useUpdateHomeSectionMutation,
+    useGetPageSettingsQuery 
 } = homeApiSlice
