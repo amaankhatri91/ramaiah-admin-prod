@@ -1,600 +1,858 @@
-import { Card, Input, Button, Select } from '@/components/ui'
-import { FormItem, FormContainer } from '@/components/ui/Form'
-import { Field, Form, Formik } from 'formik'
-import * as Yup from 'yup'
-import { useState, useRef, useEffect } from 'react'
-import { useUploadFileMutation } from '@/store/slices/fileUpload/fileUploadApiSlice'
-import { useGetHomeDataQuery, useUpdateHomeSectionMutation } from '@/store/slices/home'
-import { parseMiddleSection, ContentBlock } from '@/services/HomeService'
-import { toast, Notification } from '@/components/ui'
-import { RichTextEditor } from '@/components/shared'
+import { Card, Input, Button, Select } from "@/components/ui";
+import { FormItem, FormContainer } from "@/components/ui/Form";
+import { Field, Form, Formik } from "formik";
+import * as Yup from "yup";
+import { useState, useRef, useEffect } from "react";
+import { useUploadFileMutation } from "@/store/slices/fileUpload/fileUploadApiSlice";
+import {
+  useGetHomeDataQuery,
+  useUpdateHomeSectionMutation,
+} from "@/store/slices/home";
+import { parseMiddleSection, ContentBlock } from "@/services/HomeService";
+import { toast, Notification } from "@/components/ui";
+import { RichTextEditor } from "@/components/shared";
 
 type MiddleSectionFormSchema = {
-    headerText: string
-    headerTextHeadingLevel: string
-    subHeaderText: string
-    doctorSpeakVideo: string
-    doctorSpeakVideoMediaFileId?: number
-}
+  headerText: string;
+  headerTextHeadingLevel: string;
+  subHeaderText: string;
+  doctorSpeakVideo: string;
+  doctorSpeakVideoMediaFileId?: number;
+};
 
 const headingLevelOptions = [
-    { value: 'h1', label: 'H1' },
-    { value: 'h2', label: 'H2' },
-    { value: 'h3', label: 'H3' },
-    { value: 'h4', label: 'H4' },
-    { value: 'h5', label: 'H5' },
-    { value: 'h6', label: 'H6' },
-]
+  { value: "h1", label: "H1" },
+  { value: "h2", label: "H2" },
+  { value: "h3", label: "H3" },
+  { value: "h4", label: "H4" },
+  { value: "h5", label: "H5" },
+  { value: "h6", label: "H6" },
+  { value: "span", label: "Span" },
+  { value: "p", label: "Paragraph" },
+];
 
 const validationSchema = Yup.object().shape({
-    headerText: Yup.string().required('Header text is required'),
-    headerTextHeadingLevel: Yup.string().required('Header text heading level is required'),
-    subHeaderText: Yup.string().required('Sub header text is required'),
-    doctorSpeakVideo: Yup.string().required('Doctor speak video is required'),
-})
+  headerText: Yup.string().required("Header text is required"),
+  headerTextHeadingLevel: Yup.string().required(
+    "Header text heading level is required"
+  ),
+  subHeaderText: Yup.string().required("Sub header text is required"),
+  doctorSpeakVideo: Yup.string().required("Doctor speak video is required"),
+});
 
 interface MiddleSectionProps {
-    sectionId: number
+  sectionId: number;
 }
 
 const MiddleSection = ({ sectionId }: MiddleSectionProps) => {
-    const [uploadFile, { isLoading: isUploading }] = useUploadFileMutation()
-    const [updateHomeSection, { isLoading: isUpdating }] = useUpdateHomeSectionMutation()
-    const { data: homeData, isLoading: isLoadingData, error } = useGetHomeDataQuery()
-    const doctorSpeakVideoFileRef = useRef<HTMLInputElement>(null)
-    const [initialFormValues, setInitialFormValues] = useState<MiddleSectionFormSchema | null>(null)
-    const [isVideoUploading, setIsVideoUploading] = useState(false)
+  const [uploadFile, { isLoading: isUploading }] = useUploadFileMutation();
+  const [updateHomeSection, { isLoading: isUpdating }] =
+    useUpdateHomeSectionMutation();
+  const {
+    data: homeData,
+    isLoading: isLoadingData,
+    error,
+  } = useGetHomeDataQuery();
+  const doctorSpeakVideoFileRef = useRef<HTMLInputElement>(null);
+  const [initialFormValues, setInitialFormValues] =
+    useState<MiddleSectionFormSchema | null>(null);
+  const [isVideoUploading, setIsVideoUploading] = useState(false);
 
-    // Store initial values when data is loaded
-    useEffect(() => {
-        // homeData.data is now the content_blocks array (extracted in API slice)
-        const contentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
-        if (contentBlocks && contentBlocks.length > 0 && !initialFormValues) {
-            const initialValues = getInitialValues()
-            setInitialFormValues(initialValues)
-            console.log('Initial form values stored:', initialValues)
-        }
-    }, [homeData, initialFormValues])
+  // Store initial values when data is loaded
+  useEffect(() => {
+    // homeData.data is now the content_blocks array (extracted in API slice)
+    const contentBlocks = Array.isArray(homeData?.data) ? homeData.data : [];
+    if (contentBlocks && contentBlocks.length > 0 && !initialFormValues) {
+      const initialValues = getInitialValues();
+      setInitialFormValues(initialValues);
+      console.log("Initial form values stored:", initialValues);
+    }
+  }, [homeData, initialFormValues]);
 
-    // Parse heading level from custom_css (e.g., "heading-level:h1") or default
-    const getHeadingLevel = (block: ContentBlock | undefined, defaultValue: string): string => {
-        if (!block?.custom_css) return defaultValue
-        const match = block.custom_css.match(/heading-level:\s*(h[1-6])/i)
-        return match ? match[1].toLowerCase() : defaultValue
+  const getHeadingLevel = (
+    block: ContentBlock | undefined,
+    defaultValue: string
+  ): string => {
+    if (!block?.custom_css) return defaultValue;
+    const matches = block.custom_css.match(
+      /heading-level\s*:\s*(h[1-6]|p|span)\b/gi
+    );
+    if (!matches || matches.length === 0) return defaultValue;
+    const lastMatch = matches[matches.length - 1];
+    const tagMatch = lastMatch.match(/(h[1-6]|p|span)/i);
+    return tagMatch ? tagMatch[1].toLowerCase() : defaultValue;
+  };
+
+  const getInitialValues = (): MiddleSectionFormSchema => {
+    // homeData.data is now the content_blocks array (extracted in API slice)
+    const contentBlocks = Array.isArray(homeData?.data) ? homeData.data : [];
+
+    if (!contentBlocks || contentBlocks.length === 0) {
+      return {
+        headerText: "",
+        headerTextHeadingLevel: "h1",
+        subHeaderText: "",
+        doctorSpeakVideo: "",
+      };
     }
 
-    const getInitialValues = (): MiddleSectionFormSchema => {
-        // homeData.data is now the content_blocks array (extracted in API slice)
-        const contentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
-        
-        if (!contentBlocks || contentBlocks.length === 0) {
-            return {
-                headerText: "",
-                headerTextHeadingLevel: 'h1',
-                subHeaderText: "",
-                doctorSpeakVideo: ""
-            }
-        }
-        
-        // Parse the data based on the three objects structure
-        const middleBlocks = contentBlocks.filter((block: ContentBlock) => block.section_id === sectionId)
-        console.log('Middle blocks for section', sectionId, ':', middleBlocks)
-        
-        // First object: Text block with title (Header Text)
-        // Try to find the header block by looking for text blocks first
-        let headerBlock = middleBlocks.find((block: ContentBlock) => 
-            block.block_type === 'text' && 
-            block.title && 
-            block.title.includes('Legacy & Clinical Excellence')
-        )
-        
-        // If not found, try to find any text block that might contain the header
-        if (!headerBlock) {
-            headerBlock = middleBlocks.find((block: ContentBlock) => 
-                block.block_type === 'text' && 
-                block.title
-            )
-        }
-        
-        const headerText = headerBlock?.title || "Our 20+ Years of Legacy & Clinical Excellence"
-        const headerTextHeadingLevel = getHeadingLevel(headerBlock, 'h1')
-        
-        // Second object: Custom block with content (Sub Header Text)
-        // Try to find content block with Ramaiah Memorial Hospital text
-        let contentBlock = middleBlocks.find((block: ContentBlock) => 
-            block.block_type === 'custom' && 
-            block.content && 
-            block.content.includes('Ramaiah Memorial Hospital')
-        )
-        
-        // If not found, try to find any custom block with content
-        if (!contentBlock) {
-            contentBlock = middleBlocks.find((block: ContentBlock) => 
-                block.block_type === 'custom' && 
-                block.content
-            )
-        }
-        
-        const subHeaderText = contentBlock?.content || ""
-        
-        // Third object: Video block with media file (Doctor Speak Video)
-        const videoBlock = middleBlocks.find((block: ContentBlock) => block.block_type === 'video')
-        const doctorSpeakVideo = videoBlock?.media_files?.[0]?.media_file?.original_filename || ""
-        const doctorSpeakVideoMediaFileId = videoBlock?.media_files?.[0]?.media_file?.id
-        
-        const finalValues = {
-            headerText: headerText,
-            headerTextHeadingLevel: headerTextHeadingLevel,
-            subHeaderText: subHeaderText,
-            doctorSpeakVideo: doctorSpeakVideo,
-            doctorSpeakVideoMediaFileId: doctorSpeakVideoMediaFileId
-        }
-        
-        console.log('Final initial values for Middle Section:', finalValues)
-        return finalValues
+    // Parse the data based on the three objects structure
+    const middleBlocks = contentBlocks.filter(
+      (block: ContentBlock) => block.section_id === sectionId
+    );
+    console.log("Middle blocks for section", sectionId, ":", middleBlocks);
+
+    // First object: Text block with title (Header Text)
+    // Try to find the header block by looking for text blocks first
+    let headerBlock = middleBlocks.find(
+      (block: ContentBlock) =>
+        block.block_type === "text" &&
+        block.title &&
+        block.title.includes("Legacy & Clinical Excellence")
+    );
+
+    // If not found, try to find any text block that might contain the header
+    if (!headerBlock) {
+      headerBlock = middleBlocks.find(
+        (block: ContentBlock) => block.block_type === "text" && block.title
+      );
     }
 
-    const handleVideoUpload = async (setFieldValue: any, event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0]
-        if (!file) return
+    const headerText =
+      headerBlock?.title || "Our 20+ Years of Legacy & Clinical Excellence";
+    const headerTextHeadingLevel = getHeadingLevel(headerBlock, "h1");
 
-        try {
-            setIsVideoUploading(true)
-            setFieldValue('doctorSpeakVideo', file.name)
-            
-            const result = await uploadFile({ file }).unwrap()
-            
-            if (result.status === 1) {
-                toast.push(
-                    <Notification type="success" duration={2500} title="Upload Success">
-                        {result.message}
-                    </Notification>,
-                    { placement: 'top-end' }
-                )
-                
-                // Update the field with the original filename from the response
-                const responseData = result.data as any
-                if (responseData?.savedMedia?.original_filename) {
-                    setFieldValue('doctorSpeakVideo', responseData.savedMedia.original_filename)
-                } else if (responseData?.filePath) {
-                    // Fallback to filePath if original_filename is not available
-                    setFieldValue('doctorSpeakVideo', responseData.filePath)
-                }
-                
-                // Set the media file ID for the API call
-                if (responseData?.savedMedia?.id) {
-                    setFieldValue('doctorSpeakVideoMediaFileId', responseData.savedMedia.id)
-                    console.log('Doctor speak video upload - savedMedia.id:', responseData.savedMedia.id)
-                }
-                
-                // Reset the file input to allow re-uploading the same file if needed
-                if (doctorSpeakVideoFileRef.current) {
-                    doctorSpeakVideoFileRef.current.value = ''
-                }
-            } else {
-                throw new Error(result.message)
-            }
-        } catch (error: any) {
-            const errorMessage = error?.data?.message || error?.message || 'File upload failed'
-            toast.push(
-                <Notification type="danger" duration={3000} title="Upload Error">
-                    {errorMessage}
-                </Notification>,
-                { placement: 'top-end' }
-            )
-            
-            // Reset the field values on error
-            setFieldValue('doctorSpeakVideo', '')
-            setFieldValue('doctorSpeakVideoMediaFileId', undefined)
-        } finally {
-            setIsVideoUploading(false)
-        }
+    // Second object: Custom block with content (Sub Header Text)
+    // Try to find content block with Ramaiah Memorial Hospital text
+    let contentBlock = middleBlocks.find(
+      (block: ContentBlock) =>
+        block.block_type === "custom" &&
+        block.content &&
+        block.content.includes("Ramaiah Memorial Hospital")
+    );
+
+    // If not found, try to find any custom block with content
+    if (!contentBlock) {
+      contentBlock = middleBlocks.find(
+        (block: ContentBlock) => block.block_type === "custom" && block.content
+      );
     }
 
-    const onSubmit = async (values: MiddleSectionFormSchema) => {
-        try {
-            // homeData.data is now the content_blocks array (extracted in API slice)
-            const allContentBlocks = Array.isArray(homeData?.data) ? homeData.data : []
-            
-            // Get the current middle section data to build the update structure
-            const middleBlocks = allContentBlocks.filter((block: ContentBlock) => block.section_id === sectionId) || []
-            console.log('Middle blocks:', middleBlocks)
-            
-            // Find existing content blocks based on the three objects structure
-            // const headerBlock = middleBlocks.find(block => 
-            //     block.block_type === 'text' && 
-            //     block.title && 
-            //     block.title.includes('Legacy & Clinical Excellence')
-            // )
-            // const contentBlock = middleBlocks.find(block => 
-            //     block.block_type === 'text' && 
-            //     block.content && 
-            //     block.content.includes('Ramaiah Memorial Hospital')
-            // )
-            // console.log('Content block:', contentBlock)
-            const headerBlock = middleBlocks.find((block: ContentBlock) => block.block_type === 'text')
-            const contentBlock = middleBlocks.find((block: ContentBlock) => block.block_type === 'custom')
-            const videoBlock = middleBlocks.find((block: ContentBlock) => block.block_type === 'video')
-            console.log('Header block:', headerBlock)
-            console.log('Content block:', contentBlock)
-            console.log('Video block:', videoBlock)
-            
-            // Get initial values to compare changes
-            if (!initialFormValues) {
-                toast.push(
-                    <Notification type="danger" duration={3000} title="Error">
-                        Initial values not loaded. Please refresh the page.
-                    </Notification>,
-                    { placement: 'top-end' }
-                )
-                return
-            }
-            const initialValues = initialFormValues
-            
-            // Build content blocks array - only include changed blocks
-            const updatedContentBlocks: any[] = []
-            const changedObjects: string[] = []
-            
-            // 1. Check if Header Text or Heading Level changed
-            const headerTextChanged = values.headerText !== initialValues.headerText
-            const headerTextHeadingLevelChanged = values.headerTextHeadingLevel !== initialValues.headerTextHeadingLevel
-            
-            console.log('Header Text comparison:', {
-                current: values.headerText,
-                initial: initialValues.headerText,
-                changed: headerTextChanged
-            })
-            console.log('Header Heading Level comparison:', {
-                current: values.headerTextHeadingLevel,
-                initial: initialValues.headerTextHeadingLevel,
-                changed: headerTextHeadingLevelChanged
-            })
-            
-            if (headerTextChanged || headerTextHeadingLevelChanged) {
-                // Build custom_css with heading level, preserving existing custom_css if any
-                let customCss = headerBlock?.custom_css || ''
-                if (headerTextHeadingLevelChanged) {
-                    // Replace existing heading-level or add new one
-                    if (customCss.match(/heading-level:\s*h[1-6]/i)) {
-                        customCss = customCss.replace(/heading-level:\s*h[1-6]/i, `heading-level:${values.headerTextHeadingLevel}`)
-                    } else {
-                        customCss = customCss ? `${customCss}; heading-level:${values.headerTextHeadingLevel}` : `heading-level:${values.headerTextHeadingLevel}`
-                    }
-                } else if (!customCss.match(/heading-level:/i) && headerBlock) {
-                    // Add default if not present and block exists
-                    customCss = customCss ? `${customCss}; heading-level:${values.headerTextHeadingLevel}` : `heading-level:${values.headerTextHeadingLevel}`
-                }
-                
-                if (headerBlock) {
-                    // Update existing header block
-                    updatedContentBlocks.push({
-                        id: headerBlock.id,
-                        block_type: headerBlock.block_type,
-                        title: values.headerText,
-                        content: values.headerText,
-                        display_order: headerBlock.display_order,
-                        custom_css: customCss,
-                        field_tag: values.headerTextHeadingLevel // Add field_tag with heading level value
-                    })
-                    console.log('Header block updated:', updatedContentBlocks)
-                } else {
-                    // Create new header block
-                    updatedContentBlocks.push({
-                        block_type: "text",
-                        title: values.headerText,
-                        content: values.headerText,
-                        custom_css: customCss,
-                        field_tag: values.headerTextHeadingLevel // Add field_tag with heading level value
-                    })
-                }
-                changedObjects.push('Header Text')
-            }
-            
-            // 2. Check if Sub Header Text (Content) changed
-            const subHeaderTextChanged = values.subHeaderText !== initialValues.subHeaderText
-            console.log('Sub Header Text comparison:', {
-                current: values.subHeaderText,
-                initial: initialValues.subHeaderText,
-                changed: subHeaderTextChanged
-            })
-            
-            if (subHeaderTextChanged) {
-                if (contentBlock) {
-                    // Update existing content block
-                    updatedContentBlocks.push({
-                        id: contentBlock.id,
-                        block_type: contentBlock.block_type,
-                        title: contentBlock.title,
-                        content: values.subHeaderText,
-                        display_order: contentBlock.display_order
-                    })
-                } else {
-                    // Create new content block
-                updatedContentBlocks.push({
-                        block_type: "text",
-                        title: null,
-                    content: values.subHeaderText
-                })
-                }
-                changedObjects.push('Sub Header Text')
-            }
-            
-            // 3. Check if Doctor Speak Video changed
-            const videoFileChanged = values.doctorSpeakVideo !== initialValues.doctorSpeakVideo
-            const videoMediaFileIdChanged = values.doctorSpeakVideoMediaFileId !== initialValues.doctorSpeakVideoMediaFileId
-            const videoChanged = videoFileChanged || videoMediaFileIdChanged
-            
-            console.log('Doctor Speak Video comparison:', {
-                file: { current: values.doctorSpeakVideo, initial: initialValues.doctorSpeakVideo, changed: videoFileChanged },
-                mediaFileId: { current: values.doctorSpeakVideoMediaFileId, initial: initialValues.doctorSpeakVideoMediaFileId, changed: videoMediaFileIdChanged },
-                overallChanged: videoChanged
-            })
-            
-            if (videoChanged) {
-                if (videoBlock) {
-                    // Update existing video block
-                updatedContentBlocks.push({
-                    id: videoBlock.id,
-                    block_type: videoBlock.block_type,
-                    title: videoBlock.title,
-                    content: videoBlock.content,
-                    display_order: videoBlock.display_order,
-                    media_files: values.doctorSpeakVideoMediaFileId ? [{
-                        id: videoBlock.media_files?.[0]?.id || Date.now(),
-                        content_block_id: videoBlock.id,
-                        media_file_id: values.doctorSpeakVideoMediaFileId,
-                        media_type: "primary", // Video should be primary
-                        display_order: 1
-                    }] : []
-                })
-                console.log('Video block updated:', updatedContentBlocks)
-                } else {
-                    // Create new video block
-                    updatedContentBlocks.push({
-                        block_type: "video",
-                        title: null,
-                        media_files: values.doctorSpeakVideoMediaFileId ? [{
-                            media_file_id: values.doctorSpeakVideoMediaFileId,
-                            media_type: "primary", // Video should be primary
-                            display_order: 1
-                        }] : []
-                    })
-                }
-                changedObjects.push('Doctor Speak Video')
-            }
-            
-            console.log('Changed objects:', changedObjects)
-            console.log('Content blocks to update:', updatedContentBlocks)
-            
-            // // Only proceed if there are changes
-            // if (updatedContentBlocks.length === 0) {
-            //     toast.push(
-            //         <Notification type="info" duration={2500} title="No Changes">
-            //             No changes detected to save.
-            //         </Notification>,
-            //         { placement: 'top-end' }
-            //     )
-            //     return
-            // }
-            
-            // Build the update data structure
-            const updateData = {
-                id: sectionId, // Dynamic section ID
-                name: "Middle Section",
-                title: "Middle Section",
-                content_blocks: updatedContentBlocks
-            }
-            
-            console.log('Final payload being sent:', updateData)
-            console.log('Only these objects are being updated:', changedObjects)
-            
-            // Make the actual API call
-            const result = await updateHomeSection({ sectionId, updateData }).unwrap()
-            
-            if (result.success) {
-                toast.push(
-                    <Notification type="success" duration={2500} title="Success">
-                        Middle section updated successfully
-                    </Notification>,
-                    { placement: 'top-end' }
-                )
-            } else {
-                throw new Error(result.message || 'Failed to update middle section')
-            }
-        } catch (error: any) {
-            const errorMessage = error?.data?.message || error?.message || 'Failed to update middle section'
-            toast.push(
-                <Notification type="danger" duration={3000} title="Error">
-                    {errorMessage}
-                </Notification>,
-                { placement: 'top-end' }
-            )
+    const subHeaderText = contentBlock?.content || "";
+
+    // Third object: Video block with media file (Doctor Speak Video)
+    const videoBlock = middleBlocks.find(
+      (block: ContentBlock) => block.block_type === "video"
+    );
+    const doctorSpeakVideo =
+      videoBlock?.media_files?.[0]?.media_file?.original_filename || "";
+    const doctorSpeakVideoMediaFileId =
+      videoBlock?.media_files?.[0]?.media_file?.id;
+
+    const finalValues = {
+      headerText: headerText,
+      headerTextHeadingLevel: headerTextHeadingLevel,
+      subHeaderText: subHeaderText,
+      doctorSpeakVideo: doctorSpeakVideo,
+      doctorSpeakVideoMediaFileId: doctorSpeakVideoMediaFileId,
+    };
+
+    console.log("Final initial values for Middle Section:", finalValues);
+    return finalValues;
+  };
+
+  const handleVideoUpload = async (
+    setFieldValue: any,
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsVideoUploading(true);
+      setFieldValue("doctorSpeakVideo", file.name);
+
+      const result = await uploadFile({ file }).unwrap();
+
+      if (result.status === 1) {
+        toast.push(
+          <Notification type="success" duration={2500} title="Upload Success">
+            {result.message}
+          </Notification>,
+          { placement: "top-end" }
+        );
+
+        // Update the field with the original filename from the response
+        const responseData = result.data as any;
+        if (responseData?.savedMedia?.original_filename) {
+          setFieldValue(
+            "doctorSpeakVideo",
+            responseData.savedMedia.original_filename
+          );
+        } else if (responseData?.filePath) {
+          // Fallback to filePath if original_filename is not available
+          setFieldValue("doctorSpeakVideo", responseData.filePath);
         }
+
+        // Set the media file ID for the API call
+        if (responseData?.savedMedia?.id) {
+          setFieldValue(
+            "doctorSpeakVideoMediaFileId",
+            responseData.savedMedia.id
+          );
+          console.log(
+            "Doctor speak video upload - savedMedia.id:",
+            responseData.savedMedia.id
+          );
+        }
+
+        // Reset the file input to allow re-uploading the same file if needed
+        if (doctorSpeakVideoFileRef.current) {
+          doctorSpeakVideoFileRef.current.value = "";
+        }
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (error: any) {
+      const errorMessage =
+        error?.data?.message || error?.message || "File upload failed";
+      toast.push(
+        <Notification type="danger" duration={3000} title="Upload Error">
+          {errorMessage}
+        </Notification>,
+        { placement: "top-end" }
+      );
+
+      // Reset the field values on error
+      setFieldValue("doctorSpeakVideo", "");
+      setFieldValue("doctorSpeakVideoMediaFileId", undefined);
+    } finally {
+      setIsVideoUploading(false);
     }
+  };
 
-    return (
-        <Card className="bg-gray-50 rounded-xl">
-            <div className="px-2">
-                <p className="text-[#495057] font-inter text-[14px] font-semibold leading-normal mb-[20px]">Middle Section</p>
+  const onSubmit = async (values: MiddleSectionFormSchema) => {
+    try {
+      // homeData.data is now the content_blocks array (extracted in API slice)
+      const allContentBlocks = Array.isArray(homeData?.data)
+        ? homeData.data
+        : [];
 
-                {isLoadingData ? (
-                    <div className="flex justify-center items-center py-8">
-                        <div className="text-gray-500">Loading middle section data...</div>
-                    </div>
-                ) : error ? (
-                    <div className="flex justify-center items-center py-8">
-                        <div className="text-red-500">Error loading middle section data</div>
-                    </div>
-                ) : (
-                    <Formik
-                        key={homeData?.data ? 'loaded' : 'loading'}
-                        initialValues={getInitialValues()}
-                        validationSchema={validationSchema}
-                        onSubmit={onSubmit}
-                        enableReinitialize={true}
-                    >
-                    {({ values, setFieldValue, touched, errors, isSubmitting }) => (
-                        <Form>
-                            <FormContainer>
-                                {/* Header and Sub Header Text Section */}
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                    {/* Left Column */}
-                                    <div className="space-y-4">
-                                        <FormItem
-                                            label="Header Text"
-                                            labelClass="text-[#495057] font-inter text-[14px] font-medium leading-normal"
-                                            invalid={(errors.headerText && touched.headerText) as boolean}
-                                            errorMessage={errors.headerText}
-                                        >
-                                                    <Field name="headerTextHeadingLevel">
-                                                        {({ field, form }: any) => (
-                                                            <Select
-                                                                {...field}
-                                                                options={headingLevelOptions}
-                                                                className="!w-[100px] !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500 mb-3"
-                                                                onChange={(option: any) => {
-                                                                    form.setFieldValue('headerTextHeadingLevel', option?.value || 'h1')
-                                                                }}
-                                                                value={headingLevelOptions.find(option => option.value === field.value)}
-                                                            />
-                                                        )}
-                                                    </Field>
-                                            <div className="flex flex-col gap-3">
-                                                <div className="flex gap-3">
-                                                    <div className="flex-1">
-                                                        <Field name="headerText">
-                                                            {({ field, form }: any) => (
-                                                                <RichTextEditor
-                                                                    value={field.value || ''}
-                                                                    onChange={(value) => form.setFieldValue('headerText', value)}
-                                                                    placeholder="Enter header text"
-                                                                    theme="snow"
-                                                                    modules={{
-                                                                        toolbar: [
-                                                                            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                                                                            ['bold', 'italic', 'underline', 'strike'],
-                                                                            [{ 'color': ['#D60F8C','#305FC2','#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#00ADEF', '#D60F8C'] }, { 'background': ['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#00ADEF', '#D60F8C'] }],
-                                                                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                                                                            [{ 'indent': '-1'}, { 'indent': '+1' }],
-                                                                            [{ 'align': [] }],
-                                                                            ['link', 'image'],
-                                                                            ['clean']
-                                                                        ],
-                                                                        clipboard: {
-                                                                            matchVisual: false
-                                                                        }
-                                                                    }}
-                                                                    formats={[
-                                                                        'header', 'bold', 'italic', 'underline', 'strike',
-                                                                        'color', 'background', 'list', 'bullet', 'indent',
-                                                                        'align', 'link', 'image'
-                                                                    ]}
-                                                                    style={{
-                                                                        minHeight: '150px'
-                                                                    }}
-                                                                />
-                                                            )}
-                                                        </Field>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </FormItem>
-                                    </div>
+      // Get the current middle section data to build the update structure
+      const middleBlocks =
+        allContentBlocks.filter(
+          (block: ContentBlock) => block.section_id === sectionId
+        ) || [];
+      console.log("Middle blocks:", middleBlocks);
 
-                                    {/* Right Column */}
-                                    <div className="space-y-4">
-                                        <FormItem
-                                            label="Content"
-                                            labelClass="text-[#495057] font-inter text-[14px] font-medium leading-normal"
-                                            invalid={(errors.subHeaderText && touched.subHeaderText) as boolean}
-                                            errorMessage={errors.subHeaderText}
-                                        >
-                                            <Field name="subHeaderText">
-                                                {({ field, form }: any) => (
-                                                    <RichTextEditor
-                                                        value={field.value || ''}
-                                                        onChange={(value) => form.setFieldValue('subHeaderText', value)}
-                                                        placeholder="Enter sub header text"
-                                                        theme="snow"
-                                                        modules={{
-                                                            toolbar: [
-                                                                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                                                                ['bold', 'italic', 'underline', 'strike'],
-                                                                [{ 'color': ['#305FC2','#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#00ADEF', '#D60F8C'] }, { 'background': ['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#00ADEF', '#D60F8C'] }],
-                                                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                                                                [{ 'indent': '-1'}, { 'indent': '+1' }],
-                                                                [{ 'align': [] }],
-                                                                ['link', 'image'],
-                                                                ['clean']
-                                                            ],
-                                                            clipboard: {
-                                                                matchVisual: false
-                                                            }
-                                                        }}
-                                                        formats={[
-                                                            'header', 'bold', 'italic', 'underline', 'strike',
-                                                            'color', 'background', 'list', 'bullet', 'indent',
-                                                            'align', 'link', 'image'
-                                                        ]}
-                                                        style={{
-                                                            minHeight: '150px'
-                                                        }}
-                                                    />
-                                                )}
-                                            </Field>
-                                        </FormItem>
-                                    </div>
-                                </div>
+      // Find existing content blocks based on the three objects structure
+      // const headerBlock = middleBlocks.find(block =>
+      //     block.block_type === 'text' &&
+      //     block.title &&
+      //     block.title.includes('Legacy & Clinical Excellence')
+      // )
+      // const contentBlock = middleBlocks.find(block =>
+      //     block.block_type === 'text' &&
+      //     block.content &&
+      //     block.content.includes('Ramaiah Memorial Hospital')
+      // )
+      // console.log('Content block:', contentBlock)
+      const headerBlock = middleBlocks.find(
+        (block: ContentBlock) => block.block_type === "text"
+      );
+      const contentBlock = middleBlocks.find(
+        (block: ContentBlock) => block.block_type === "custom"
+      );
+      const videoBlock = middleBlocks.find(
+        (block: ContentBlock) => block.block_type === "video"
+      );
+      console.log("Header block:", headerBlock);
+      console.log("Content block:", contentBlock);
+      console.log("Video block:", videoBlock);
 
-                                {/* Doctor Speak Video Section */}
-                                <div className="mb-6">
-                                    <h3 className="text-[#495057] font-inter text-[14px] font-semibold leading-normal mb-[8px]">Doctor Speak Video</h3>
-                                    <div className="flex w-full">
-                                        <div className="flex flex-col w-full sm:flex-row sm:items-center sm:justify-between rounded-[24px] border-[0.75px] border-[#CED4DA] mr-[20px]">
-                                            <div className="flex-1 mb-3 sm:mb-0">
-                                                <span className="text-gray-700 font-medium pl-4">{values.doctorSpeakVideo}</span>
-                                            </div>
-                                            <div className="flex flex-col sm:flex-row gap-3">
-                                                <label className="cursor-pointer">
-                                                    <input
-                                                        ref={doctorSpeakVideoFileRef}
-                                                        type="file"
-                                                        accept="video/*"
-                                                        onChange={(e) => handleVideoUpload(setFieldValue, e)}
-                                                        className="hidden"
-                                                    />
-                                                    <Button
-                                                        type="button"
-                                                        loading={isVideoUploading}
-                                                        onClick={() => doctorSpeakVideoFileRef.current?.click()}
-                                                        className="!bg-[#C5C5C5] !text-[#495057] !rounded-[24px] font-inter text-[14px] font-medium leading-normal"
-                                                    >
-                                                        {isVideoUploading ? 'Uploading...' : 'Upload Video'}
-                                                    </Button>
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+      // Get initial values to compare changes
+      if (!initialFormValues) {
+        toast.push(
+          <Notification type="danger" duration={3000} title="Error">
+            Initial values not loaded. Please refresh the page.
+          </Notification>,
+          { placement: "top-end" }
+        );
+        return;
+      }
+      const initialValues = initialFormValues;
 
-                                {/* Save Button */}
-                                <div className="flex justify-end">
-                                    <Button
-                                        type="submit"
-                                        loading={isSubmitting || isUpdating}
-                                        className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white px-4 py-2 font-medium transition-all duration-200"
-                                    >
-                                        {isSubmitting || isUpdating ? 'Saving...' : 'Save'}
-                                    </Button>
-                                </div>
-                            </FormContainer>
-                        </Form>
-                    )}
-                    </Formik>
-                )}
+      // Build content blocks array - only include changed blocks
+      const updatedContentBlocks: any[] = [];
+      const changedObjects: string[] = [];
+
+      // 1. Check if Header Text or Heading Level changed
+      const headerTextChanged = values.headerText !== initialValues.headerText;
+      const headerTextHeadingLevelChanged =
+        values.headerTextHeadingLevel !== initialValues.headerTextHeadingLevel;
+
+      console.log("Header Text comparison:", {
+        current: values.headerText,
+        initial: initialValues.headerText,
+        changed: headerTextChanged,
+      });
+      console.log("Header Heading Level comparison:", {
+        current: values.headerTextHeadingLevel,
+        initial: initialValues.headerTextHeadingLevel,
+        changed: headerTextHeadingLevelChanged,
+      });
+
+      if (headerTextChanged || headerTextHeadingLevelChanged) {
+        // Build custom_css with heading level, preserving existing custom_css if any
+        let customCss = headerBlock?.custom_css || "";
+        if (headerTextHeadingLevelChanged) {
+          // Replace existing heading-level or add new one
+          if (customCss.match(/heading-level:\s*h[1-6]/i)) {
+            customCss = customCss.replace(
+              /heading-level:\s*h[1-6]/i,
+              `heading-level:${values.headerTextHeadingLevel}`
+            );
+          } else {
+            customCss = customCss
+              ? `${customCss}; heading-level:${values.headerTextHeadingLevel}`
+              : `heading-level:${values.headerTextHeadingLevel}`;
+          }
+        } else if (!customCss.match(/heading-level:/i) && headerBlock) {
+          // Add default if not present and block exists
+          customCss = customCss
+            ? `${customCss}; heading-level:${values.headerTextHeadingLevel}`
+            : `heading-level:${values.headerTextHeadingLevel}`;
+        }
+
+        if (headerBlock) {
+          // Update existing header block
+          updatedContentBlocks.push({
+            id: headerBlock.id,
+            block_type: headerBlock.block_type,
+            title: values.headerText,
+            content: values.headerText,
+            display_order: headerBlock.display_order,
+            custom_css: customCss,
+            field_tag: values.headerTextHeadingLevel, // Add field_tag with heading level value
+          });
+          console.log("Header block updated:", updatedContentBlocks);
+        } else {
+          // Create new header block
+          updatedContentBlocks.push({
+            block_type: "text",
+            title: values.headerText,
+            content: values.headerText,
+            custom_css: customCss,
+            field_tag: values.headerTextHeadingLevel, // Add field_tag with heading level value
+          });
+        }
+        changedObjects.push("Header Text");
+      }
+
+      // 2. Check if Sub Header Text (Content) changed
+      const subHeaderTextChanged =
+        values.subHeaderText !== initialValues.subHeaderText;
+      console.log("Sub Header Text comparison:", {
+        current: values.subHeaderText,
+        initial: initialValues.subHeaderText,
+        changed: subHeaderTextChanged,
+      });
+
+      if (subHeaderTextChanged) {
+        if (contentBlock) {
+          // Update existing content block
+          updatedContentBlocks.push({
+            id: contentBlock.id,
+            block_type: contentBlock.block_type,
+            title: contentBlock.title,
+            content: values.subHeaderText,
+            display_order: contentBlock.display_order,
+          });
+        } else {
+          // Create new content block
+          updatedContentBlocks.push({
+            block_type: "text",
+            title: null,
+            content: values.subHeaderText,
+          });
+        }
+        changedObjects.push("Sub Header Text");
+      }
+
+      // 3. Check if Doctor Speak Video changed
+      const videoFileChanged =
+        values.doctorSpeakVideo !== initialValues.doctorSpeakVideo;
+      const videoMediaFileIdChanged =
+        values.doctorSpeakVideoMediaFileId !==
+        initialValues.doctorSpeakVideoMediaFileId;
+      const videoChanged = videoFileChanged || videoMediaFileIdChanged;
+
+      console.log("Doctor Speak Video comparison:", {
+        file: {
+          current: values.doctorSpeakVideo,
+          initial: initialValues.doctorSpeakVideo,
+          changed: videoFileChanged,
+        },
+        mediaFileId: {
+          current: values.doctorSpeakVideoMediaFileId,
+          initial: initialValues.doctorSpeakVideoMediaFileId,
+          changed: videoMediaFileIdChanged,
+        },
+        overallChanged: videoChanged,
+      });
+
+      if (videoChanged) {
+        if (videoBlock) {
+          // Update existing video block
+          updatedContentBlocks.push({
+            id: videoBlock.id,
+            block_type: videoBlock.block_type,
+            title: videoBlock.title,
+            content: videoBlock.content,
+            display_order: videoBlock.display_order,
+            media_files: values.doctorSpeakVideoMediaFileId
+              ? [
+                  {
+                    id: videoBlock.media_files?.[0]?.id || Date.now(),
+                    content_block_id: videoBlock.id,
+                    media_file_id: values.doctorSpeakVideoMediaFileId,
+                    media_type: "primary", // Video should be primary
+                    display_order: 1,
+                  },
+                ]
+              : [],
+          });
+          console.log("Video block updated:", updatedContentBlocks);
+        } else {
+          // Create new video block
+          updatedContentBlocks.push({
+            block_type: "video",
+            title: null,
+            media_files: values.doctorSpeakVideoMediaFileId
+              ? [
+                  {
+                    media_file_id: values.doctorSpeakVideoMediaFileId,
+                    media_type: "primary", // Video should be primary
+                    display_order: 1,
+                  },
+                ]
+              : [],
+          });
+        }
+        changedObjects.push("Doctor Speak Video");
+      }
+
+      console.log("Changed objects:", changedObjects);
+      console.log("Content blocks to update:", updatedContentBlocks);
+
+      // // Only proceed if there are changes
+      // if (updatedContentBlocks.length === 0) {
+      //     toast.push(
+      //         <Notification type="info" duration={2500} title="No Changes">
+      //             No changes detected to save.
+      //         </Notification>,
+      //         { placement: 'top-end' }
+      //     )
+      //     return
+      // }
+
+      // Build the update data structure
+      const updateData = {
+        id: sectionId, // Dynamic section ID
+        name: "Middle Section",
+        title: "Middle Section",
+        content_blocks: updatedContentBlocks,
+      };
+
+      console.log("Final payload being sent:", updateData);
+      console.log("Only these objects are being updated:", changedObjects);
+
+      // Make the actual API call
+      const result = await updateHomeSection({
+        sectionId,
+        updateData,
+      }).unwrap();
+
+      if (result.success) {
+        toast.push(
+          <Notification type="success" duration={2500} title="Success">
+            Middle section updated successfully
+          </Notification>,
+          { placement: "top-end" }
+        );
+      } else {
+        throw new Error(result.message || "Failed to update middle section");
+      }
+    } catch (error: any) {
+      const errorMessage =
+        error?.data?.message ||
+        error?.message ||
+        "Failed to update middle section";
+      toast.push(
+        <Notification type="danger" duration={3000} title="Error">
+          {errorMessage}
+        </Notification>,
+        { placement: "top-end" }
+      );
+    }
+  };
+
+  return (
+    <Card className="bg-gray-50 rounded-xl">
+      <div className="px-2">
+        <p className="text-[#495057] font-inter text-[14px] font-semibold leading-normal mb-[20px]">
+          Middle Section
+        </p>
+
+        {isLoadingData ? (
+          <div className="flex justify-center items-center py-8">
+            <div className="text-gray-500">Loading middle section data...</div>
+          </div>
+        ) : error ? (
+          <div className="flex justify-center items-center py-8">
+            <div className="text-red-500">
+              Error loading middle section data
             </div>
-        </Card>
-    )
-}
+          </div>
+        ) : (
+          <Formik
+            key={homeData?.data ? "loaded" : "loading"}
+            initialValues={getInitialValues()}
+            validationSchema={validationSchema}
+            onSubmit={onSubmit}
+            enableReinitialize={true}
+          >
+            {({ values, setFieldValue, touched, errors, isSubmitting }) => (
+              <Form>
+                <FormContainer>
+                  {/* Header and Sub Header Text Section */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Left Column */}
+                    <div className="space-y-4">
+                      <FormItem
+                        label="Header Text"
+                        labelClass="text-[#495057] font-inter text-[14px] font-medium leading-normal"
+                        invalid={
+                          (errors.headerText && touched.headerText) as boolean
+                        }
+                        errorMessage={errors.headerText}
+                      >
+                        <Field name="headerTextHeadingLevel">
+                          {({ field, form }: any) => (
+                            <Select
+                              {...field}
+                              options={headingLevelOptions}
+                              className="!w-[100px] !rounded-[24px] border-gray-300 focus:border-purple-500 focus:ring-purple-500 mb-3"
+                              onChange={(option: any) => {
+                                form.setFieldValue(
+                                  "headerTextHeadingLevel",
+                                  option?.value || "h1"
+                                );
+                              }}
+                              value={headingLevelOptions.find(
+                                (option) => option.value === field.value
+                              )}
+                            />
+                          )}
+                        </Field>
+                        <div className="flex flex-col gap-3">
+                          <div className="flex gap-3">
+                            <div className="flex-1">
+                              <Field name="headerText">
+                                {({ field, form }: any) => (
+                                  <RichTextEditor
+                                    value={field.value || ""}
+                                    onChange={(value) =>
+                                      form.setFieldValue("headerText", value)
+                                    }
+                                    placeholder="Enter header text"
+                                    theme="snow"
+                                    modules={{
+                                      toolbar: [
+                                        [{ header: [1, 2, 3, 4, 5, 6, false] }],
+                                        [
+                                          "bold",
+                                          "italic",
+                                          "underline",
+                                          "strike",
+                                        ],
+                                        [
+                                          {
+                                            color: [
+                                              "#D60F8C",
+                                              "#305FC2",
+                                              "#000000",
+                                              "#FF0000",
+                                              "#00FF00",
+                                              "#0000FF",
+                                              "#FFFF00",
+                                              "#FF00FF",
+                                              "#00FFFF",
+                                              "#FFA500",
+                                              "#800080",
+                                              "#008000",
+                                              "#FFC0CB",
+                                              "#A52A2A",
+                                              "#FF6B6B",
+                                              "#4ECDC4",
+                                              "#45B7D1",
+                                              "#96CEB4",
+                                              "#FFEAA7",
+                                              "#DDA0DD",
+                                              "#98D8C8",
+                                              "#F7DC6F",
+                                              "#BB8FCE",
+                                              "#85C1E9",
+                                              "#00ADEF",
+                                              "#D60F8C",
+                                            ],
+                                          },
+                                          {
+                                            background: [
+                                              "#000000",
+                                              "#FF0000",
+                                              "#00FF00",
+                                              "#0000FF",
+                                              "#FFFF00",
+                                              "#FF00FF",
+                                              "#00FFFF",
+                                              "#FFA500",
+                                              "#800080",
+                                              "#008000",
+                                              "#FFC0CB",
+                                              "#A52A2A",
+                                              "#FF6B6B",
+                                              "#4ECDC4",
+                                              "#45B7D1",
+                                              "#96CEB4",
+                                              "#FFEAA7",
+                                              "#DDA0DD",
+                                              "#98D8C8",
+                                              "#F7DC6F",
+                                              "#BB8FCE",
+                                              "#85C1E9",
+                                              "#00ADEF",
+                                              "#D60F8C",
+                                            ],
+                                          },
+                                        ],
+                                        [
+                                          { list: "ordered" },
+                                          { list: "bullet" },
+                                        ],
+                                        [{ indent: "-1" }, { indent: "+1" }],
+                                        [{ align: [] }],
+                                        ["link", "image"],
+                                        ["clean"],
+                                      ],
+                                      clipboard: {
+                                        matchVisual: false,
+                                      },
+                                    }}
+                                    formats={[
+                                      "header",
+                                      "bold",
+                                      "italic",
+                                      "underline",
+                                      "strike",
+                                      "color",
+                                      "background",
+                                      "list",
+                                      "bullet",
+                                      "indent",
+                                      "align",
+                                      "link",
+                                      "image",
+                                    ]}
+                                    style={{
+                                      minHeight: "150px",
+                                    }}
+                                  />
+                                )}
+                              </Field>
+                            </div>
+                          </div>
+                        </div>
+                      </FormItem>
+                    </div>
 
-export default MiddleSection
+                    {/* Right Column */}
+                    <div className="space-y-4">
+                      <FormItem
+                        label="Content"
+                        labelClass="text-[#495057] font-inter text-[14px] font-medium leading-normal"
+                        invalid={
+                          (errors.subHeaderText &&
+                            touched.subHeaderText) as boolean
+                        }
+                        errorMessage={errors.subHeaderText}
+                      >
+                        <Field name="subHeaderText">
+                          {({ field, form }: any) => (
+                            <RichTextEditor
+                              value={field.value || ""}
+                              onChange={(value) =>
+                                form.setFieldValue("subHeaderText", value)
+                              }
+                              placeholder="Enter sub header text"
+                              theme="snow"
+                              modules={{
+                                toolbar: [
+                                  [{ header: [1, 2, 3, 4, 5, 6, false] }],
+                                  ["bold", "italic", "underline", "strike"],
+                                  [
+                                    {
+                                      color: [
+                                        "#305FC2",
+                                        "#000000",
+                                        "#FF0000",
+                                        "#00FF00",
+                                        "#0000FF",
+                                        "#FFFF00",
+                                        "#FF00FF",
+                                        "#00FFFF",
+                                        "#FFA500",
+                                        "#800080",
+                                        "#008000",
+                                        "#FFC0CB",
+                                        "#A52A2A",
+                                        "#FF6B6B",
+                                        "#4ECDC4",
+                                        "#45B7D1",
+                                        "#96CEB4",
+                                        "#FFEAA7",
+                                        "#DDA0DD",
+                                        "#98D8C8",
+                                        "#F7DC6F",
+                                        "#BB8FCE",
+                                        "#85C1E9",
+                                        "#00ADEF",
+                                        "#D60F8C",
+                                      ],
+                                    },
+                                    {
+                                      background: [
+                                        "#000000",
+                                        "#FF0000",
+                                        "#00FF00",
+                                        "#0000FF",
+                                        "#FFFF00",
+                                        "#FF00FF",
+                                        "#00FFFF",
+                                        "#FFA500",
+                                        "#800080",
+                                        "#008000",
+                                        "#FFC0CB",
+                                        "#A52A2A",
+                                        "#FF6B6B",
+                                        "#4ECDC4",
+                                        "#45B7D1",
+                                        "#96CEB4",
+                                        "#FFEAA7",
+                                        "#DDA0DD",
+                                        "#98D8C8",
+                                        "#F7DC6F",
+                                        "#BB8FCE",
+                                        "#85C1E9",
+                                        "#00ADEF",
+                                        "#D60F8C",
+                                      ],
+                                    },
+                                  ],
+                                  [{ list: "ordered" }, { list: "bullet" }],
+                                  [{ indent: "-1" }, { indent: "+1" }],
+                                  [{ align: [] }],
+                                  ["link", "image"],
+                                  ["clean"],
+                                ],
+                                clipboard: {
+                                  matchVisual: false,
+                                },
+                              }}
+                              formats={[
+                                "header",
+                                "bold",
+                                "italic",
+                                "underline",
+                                "strike",
+                                "color",
+                                "background",
+                                "list",
+                                "bullet",
+                                "indent",
+                                "align",
+                                "link",
+                                "image",
+                              ]}
+                              style={{
+                                minHeight: "150px",
+                              }}
+                            />
+                          )}
+                        </Field>
+                      </FormItem>
+                    </div>
+                  </div>
+
+                  {/* Doctor Speak Video Section */}
+                  <div className="mb-6">
+                    <h3 className="text-[#495057] font-inter text-[14px] font-semibold leading-normal mb-[8px]">
+                      Doctor Speak Video
+                    </h3>
+                    <div className="flex w-full">
+                      <div className="flex flex-col w-full sm:flex-row sm:items-center sm:justify-between rounded-[24px] border-[0.75px] border-[#CED4DA] mr-[20px]">
+                        <div className="flex-1 mb-3 sm:mb-0">
+                          <span className="text-gray-700 font-medium pl-4">
+                            {values.doctorSpeakVideo}
+                          </span>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          <label className="cursor-pointer">
+                            <input
+                              ref={doctorSpeakVideoFileRef}
+                              type="file"
+                              accept="video/*"
+                              onChange={(e) =>
+                                handleVideoUpload(setFieldValue, e)
+                              }
+                              className="hidden"
+                            />
+                            <Button
+                              type="button"
+                              loading={isVideoUploading}
+                              onClick={() =>
+                                doctorSpeakVideoFileRef.current?.click()
+                              }
+                              className="!bg-[#C5C5C5] !text-[#495057] !rounded-[24px] font-inter text-[14px] font-medium leading-normal"
+                            >
+                              {isVideoUploading
+                                ? "Uploading..."
+                                : "Upload Video"}
+                            </Button>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Save Button */}
+                  <div className="flex justify-end">
+                    <Button
+                      type="submit"
+                      loading={isSubmitting || isUpdating}
+                      className="!rounded-[24px] bg-[linear-gradient(267deg,#00ADEF_-49.54%,#D60F8C_110.23%)] text-white px-4 py-2 font-medium transition-all duration-200"
+                    >
+                      {isSubmitting || isUpdating ? "Saving..." : "Save"}
+                    </Button>
+                  </div>
+                </FormContainer>
+              </Form>
+            )}
+          </Formik>
+        )}
+      </div>
+    </Card>
+  );
+};
+
+export default MiddleSection;
