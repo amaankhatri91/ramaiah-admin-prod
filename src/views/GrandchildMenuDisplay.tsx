@@ -1,8 +1,14 @@
-import React from 'react'
-import GrandchildMenuDisplayComponent from '@/components/template/GrandchildMenuDisplay'
+import React from "react";
+import GrandchildMenuDisplayComponent from "@/components/template/GrandchildMenuDisplay";
+import SpecilitiesSetting from "@/components/template/SpecilitiesSetting";
 
 const GrandchildMenuDisplay = () => {
-    return <GrandchildMenuDisplayComponent />
-}
+  return (
+    <>
+      {/* <SpecilitiesSetting /> */}
+      <GrandchildMenuDisplayComponent />
+    </>
+  );
+};
 
-export default GrandchildMenuDisplay
+export default GrandchildMenuDisplay;
